@@ -59,6 +59,7 @@ void print_title() {
 	printf("CParus version 0.1\n");
 	printf("CParus is free software under the GPLv3 license\n");
 	printf("Oren Daniel, Ra'anana - Israel, 2020\n\n");
+	printf("Type parus -help for help\n\n");
 
 }
 
@@ -66,6 +67,7 @@ void print_help() {
 	printf("\nParus - Postfixed Reprogrammable Stack language\n");
 	printf("Visit https://gitlab.com/oren_daniel/cparus for instructions and details\n");
 	printf("Author email oren_daniel@protonmail.com\n\n");
+	printf("flags: -help -norepl -notitle file\n\n");
 
 }
 
@@ -152,6 +154,7 @@ void do_line(char* input, Stack* stk, Lexicon* lex) {
 int main(int argc, char** argv) {
 	char 	norepl 		= 0;
 	char 	help 		= 0;
+	char 	notitle 		= 0;
 	char* 	file_name 	= NULL;
 
 	for (int i = 1; i < argc; i++) {
@@ -159,6 +162,8 @@ int main(int argc, char** argv) {
 			norepl = 1;
 		else if (strcmp(argv[i], "-help") == 0)
 			help = 1;
+		else if (strcmp(argv[i], "-notitle") == 0)
+			notitle = 1;
 		else if (file_exists(argv[i]) && file_name == NULL)
 			file_name = argv[i];
 		else 
@@ -184,7 +189,7 @@ int main(int argc, char** argv) {
 			printf("Cannot open file\n");
 	}
 
-	if (!norepl) 
+	if (!norepl && !notitle) 
 		print_title();
 	while (!norepl) {
 		
