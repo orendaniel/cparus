@@ -19,6 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "parus_predefined.h"
 #include <time.h>
 
+#define READ_BUFFER 128
+
 static decimal_t force_decimal(ParusData* pd) {
 	if (pd->type == INTEGER)
 		return (decimal_t)parusdata_tointeger(pd);
@@ -512,6 +514,28 @@ static int out(void* stk, void* lex) {
 
 }
 
+static int read(void* stk, void* lex) {
+	int c;
+	int i = 1;
+
+	char buffer[READ_BUFFER];
+	buffer[0] = '\'';
+
+	while ((c = getc(stdin)) != EOF && i < READ_BUFFER -1) {
+		if (isspace(c))
+			break;
+		else if (c != '(' && c != ')' && c != '\'' && c != '!') {
+			buffer[i] = (char)c;
+			i++;
+		}
+	}
+
+	if (strcmp(buffer, "'") != 0)
+		parus_literal_eval(buffer, stk, lex);
+
+	return 0;
+}
+
 static int putcharacter(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
 
@@ -632,6 +656,7 @@ Lexicon* predefined_lexicon() {
 
 	// I/O
 	lexicon_define(lex, "OUT", new_parusdata_primitive(&out));
+	lexicon_define(lex, "READ", new_parusdata_primitive(&read));
 	lexicon_define(lex, "PUTC", new_parusdata_primitive(&putcharacter));
 
 	// shortcuts
