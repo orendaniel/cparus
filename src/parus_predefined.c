@@ -342,25 +342,6 @@ static int delete(void* stk, void* lex) {
 	return 0;
 }
 
-static int apply(void* stk, void* lex) {
-	ParusData* pd = stack_pull(stk);
-
-	if (pd->type == INTEGER || pd->type == DECIMAL) {
-		stack_push(stk, pd);
-		return 0;
-	}
-
-	else if (pd->type == SYMBOL) 
-		parus_eval(parusdata_getsymbol(pd), stk, lex);
-	
-	else if (pd->type == COMPOUND_MACRO)
-		parus_apply_compound(pd, stk, lex);
-		
-	free_parusdata(pd);
-
-	return 0;
-}
-
 static int if_func(void* stk, void* lex) {
 	ParusData* do_false	= stack_pull(stk);
 	ParusData* do_true 	= stack_pull(stk);
@@ -422,7 +403,6 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "redef", new_parusdata_primitive(&redefine));
 	lexicon_define(lex, "del", new_parusdata_primitive(&delete));
 
-	lexicon_define(lex, "!", new_parusdata_primitive(&apply));
 	lexicon_define(lex, "if", new_parusdata_primitive(&if_func));
 
 	lexicon_define(lex, "dpl", new_parusdata_primitive(&dpl));

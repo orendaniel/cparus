@@ -108,7 +108,6 @@ void 		free_lexicon(Lexicon* lex);
 void 		lexicon_print(Lexicon* lex);
 
 
-void parus_apply_compound(ParusData* pd, Stack* stk, Lexicon* lex);
 void parus_eval(char* expr, Stack* stk, Lexicon* lex);
 void parus_literal_eval(const char* literal, Stack* stk, Lexicon* lex);
 #endif

@@ -18,6 +18,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "parus.h"
 
+
+static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex);
+static void apply(ParusData* mcr, Stack* stk, Lexicon* lex);
 // HELPERS
 // ----------------------------------------------------------------------------------------------------
 static char is_integer(char* s) {
@@ -46,6 +49,10 @@ static int strcount(char* s) {
 		i++;
 
 	return i;
+}
+
+static char is_imperative(char* s) {
+	return s[0] == '!' && strcount(s) == 1;
 }
 
 static char is_compound(char* s) {
@@ -187,8 +194,8 @@ ParusData* new_parusdata_primitive(primitve_t p) {
 	return pd;
 }
 
-
 /* make a new parusdata as compounded macro */
+// TODO IF COMPOUND CASE
 ParusData* new_parusdata_compound(char* expr) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
@@ -448,37 +455,81 @@ void lexicon_print(Lexicon* lex) {
 // EVALUATOR
 // ----------------------------------------------------------------------------------------------------
 
-/* handles compound macros */
-void parus_apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
-
-	if (mcr->type != COMPOUND_MACRO) {
-		printf("CANNOT APPLY A NON MACRO\n");
+/* applies a parusdata */
+static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
+	if (pd == NULL) 
 		return;
-	}
+
+	if (pd->type == INTEGER || pd->type == DECIMAL) 
+		stack_push(stk, pd);
 	
+	else if (pd->type == SYMBOL) {
+		// recursive call
+		parus_eval(parusdata_getsymbol(pd), stk, lex);
+		free_parusdata(pd);
+	}
+
+	else if (pd->type == PRIMITIVE_MACRO) {
+		int result = (*pd->data.primitve)(stk, lex);
+		if (result)
+			printf("ERROR\n");
+		free_parusdata(pd);
+	}
+
+	else if (pd->type == COMPOUND_MACRO) 
+		// mutual recursive call
+		apply_compound(pd, stk, lex);
+}
+
+/* handles compound macros */
+static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
+
 	tailcall:
 	for (int i = 0; i < mcr->data.compound.size; i++) {
 		ParusData* instr = mcr->data.compound.instructions[i];
 
-		if (instr->type == INTEGER || instr->type == DECIMAL)
+		if (instr->type == INTEGER || instr->type == DECIMAL || instr->type == COMPOUND_MACRO)
 			stack_push(stk, parusdata_copy(instr));
 
-		else if (instr->type == SYMBOL) {
-			char* sym_expr = copy_string(parusdata_getsymbol(instr));
+		// TODO REMAKE THE TAIL CALL
+		// last instruction
+		else if (i +1 == mcr->data.compound.size) {
+			// TODO HANDLE IF TOP OF THE STACK IS A COMPOUND
+			if (strcmp(parusdata_getsymbol(instr), "!") == 0) {
+				ParusData* pd_sym 	= stack_pull(stk); // copy instruction
+				// get the binding
+				ParusData* next_mcr = lexicon_get(lex, parusdata_getsymbol(pd_sym)); 
 
-			ParusData* pd = lexicon_get(lex, sym_expr);
-
-			if (i +1 == mcr->data.compound.size && pd->type == COMPOUND_MACRO) { // last instruction
+				free_parusdata(pd_sym);
 				free_parusdata(mcr);
-				free(sym_expr);
-				mcr = pd;
-				goto tailcall;
+
+				mcr = next_mcr;
+				if (mcr->type == COMPOUND_MACRO)
+					goto tailcall;
+				else
+					goto canceltailcall;
 			}
-			else 
-				parus_eval(sym_expr, stk, lex);
-			
-			free(sym_expr);
+			else {
+				ParusData* pd_sym 	= parusdata_copy(instr); // copy instruction
+				// get the binding
+				ParusData* next_mcr = lexicon_get(lex, parusdata_getsymbol(pd_sym)); 
+
+				free_parusdata(pd_sym);
+				free_parusdata(mcr);
+
+				mcr = next_mcr;
+				if (mcr->type == COMPOUND_MACRO)
+					goto tailcall;
+				else
+					goto canceltailcall;
+			}
 		}
+
+		else if (instr->type == SYMBOL) {
+			canceltailcall:
+			parus_eval(parusdata_getsymbol(instr), stk, lex);
+		}
+
 	}
 	free_parusdata(mcr);
 }
@@ -495,23 +546,24 @@ void parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 		return;
 	}
 
-	if (is_compound(expr)) { // instant macro call
-		ParusData* mcr = new_parusdata_compound(expr + 2);
+	/* self evaluating forms */
+	if (is_compound(expr))
+		stack_push(stk, new_parusdata_compound(expr + 2));
 
-		if (mcr != NULL && mcr->type != NONE)  {
-			// matual recursive call
-			parus_apply_compound(mcr, stk, lex);
-			//free_parusdata(mcr);
-		}
-	}
-
-	else if (is_integer(expr)) // self evaluating forms
+	else if (is_integer(expr)) 
 		stack_push(stk, new_parusdata_integer(atoi(expr)));
 
 	else if (is_decimal(expr))
 		stack_push(stk, new_parusdata_decimal(atof(expr)));
 
-	else if (is_quoted(expr)) { // quoted forms
+	/* imperative form ( that is apply according to the top of the stack )*/
+	else if (is_imperative(expr)) {
+		ParusData* top = stack_pull(stk);
+		apply(top, stk, lex);
+	}
+
+	/* quoted forms */
+	else if (is_quoted(expr)) {
 
 		if (is_integer(expr +1))
 			stack_push(stk, new_parusdata_integer(atoi(expr +1)));
@@ -519,43 +571,17 @@ void parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 		else if (is_decimal(expr +1))
 			stack_push(stk, new_parusdata_decimal(atof(expr +1)));
 
-		else if (is_compound(expr +1))
-			stack_push(stk, new_parusdata_compound(expr + 2));
-
 		else if (is_symbol(expr +1))
 			stack_push(stk, new_parusdata_symbol(copy_string(expr +1)));
 
 		else 
-			printf("INVALID QUOTATION FORM %s\n", expr);
+			printf("INVALID QUOTATION FORM - %s\n", expr);
 	}
 
-	else { // applying expression
+	/* apply for given name */
+	else {
 		ParusData* pd = lexicon_get(lex, expr);
-
-		if (pd == NULL) 
-			return;
-
-		if (pd->type == INTEGER || pd->type == DECIMAL) 
-			stack_push(stk, pd);
-		
-		else if (pd->type == SYMBOL) {
-			// recursive call
-			parus_eval(parusdata_getsymbol(pd), stk, lex);
-			free_parusdata(pd);
-		}
-
-		else if (pd->type == PRIMITIVE_MACRO) {
-			int result = (*pd->data.primitve)(stk, lex);
-			if (result)
-				printf("ERROR\n");
-			free_parusdata(pd);
-		}
-
-		else if (pd->type == COMPOUND_MACRO) {
-			// mutual recursive call
-			parus_apply_compound(pd, stk, lex);
-			//free_parusdata(pd);
-		}
+		apply(pd, stk, lex);
 	}
 }
 
