@@ -18,6 +18,127 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "parus_predefined.h"
 
+static int define(void* stk, void* lex) {
+	ParusData* sym = stack_pull(stk);
+	ParusData* val = stack_pull(stk);
+
+	if (sym == NULL || val == NULL) {
+		free_parusdata(sym);
+		free_parusdata(val);
+		printf("CANNOT DEFINE\n");
+		return 1;
+	}
+	if (sym->type != SYMBOL) {
+		free_parusdata(sym);
+		free_parusdata(val);
+		printf("CAN ONLY BIND TO SYMBOLS\n");
+		return 1;
+	}
+	lexicon_define(lex, parusdata_getsymbol(sym), val);
+	free_parusdata(sym);
+	
+	return 0;
+}
+
+static int delete(void* stk, void* lex) {
+	ParusData* sym = stack_pull(stk);
+	if (sym == NULL) {
+		free_parusdata(sym);
+		printf("CANNOT DELETE\n");
+		return 1;
+	}
+	if (sym->type != SYMBOL) {
+		free_parusdata(sym);
+		printf("CAN ONLY DELETE BINDED SYMBOLS\n");
+		return 1;
+	}
+	lexicon_delete(lex, parusdata_getsymbol(sym));
+	free_parusdata(sym);
+	return 0;
+}
+
+static int if_func(void* stk, void* lex) {
+	ParusData* do_false	= stack_pull(stk);
+	ParusData* do_true 	= stack_pull(stk);
+	ParusData* con 		= stack_pull(stk);
+
+	char act = 0;
+
+	if (con->type == INTEGER && parusdata_tointeger(con) != 0)
+		act = 1;
+	else if (con->type == DECIMAL && parusdata_todecimal(con) != 0)
+		act = 1;
+
+	if (act) {
+		stack_push(stk, do_true);
+		free_parusdata(con);
+		free_parusdata(do_false);
+		return 0;
+	}
+	else {
+		stack_push(stk, do_false);
+		free_parusdata(con);
+		free_parusdata(do_true);
+		return 0;
+
+	}
+}
+
+static int quote(void* stk, void* lex) {
+	ParusData* pd = stack_pull(stk);
+
+	if (pd->type != SYMBOL)
+		stack_push(stk, pd);
+	else {
+		char* 	sym 	= parusdata_getsymbol(pd);
+		int 	len 	= strlen(sym) +2; // space for additional quote and '\0'
+		char* 	new_sym = malloc(len * sizeof(char));
+		new_sym[0] = '\'';
+		for (int i = 1; i < len -1; i++)
+			new_sym[i] = sym[i -1];
+		free_parusdata(pd);
+		stack_push(stk, new_parusdata_symbol(new_sym));
+
+	}
+
+	return 0;
+}
+
+static int fetch(void* stk, void* lex) {
+	ParusData* pd = stack_pull(stk);
+
+	if (pd->type != INTEGER) {
+		printf("INDEX MUST BE AN INTEGER\n");
+		free_parusdata(pd);
+		return 1;
+	}
+	else {
+		ParusData* res = stack_get_at(stk, parusdata_tointeger(pd));
+
+		stack_remove_at(stk, parusdata_tointeger(pd));
+		stack_push(stk, res);
+		free_parusdata(pd);
+		return 0;
+	}
+}
+
+static int fetch_copy(void* stk, void* lex) {
+	ParusData* pd = stack_pull(stk);
+
+	if (pd->type != INTEGER) {
+		printf("INDEX MUST BE AN INTEGER\n");
+		free_parusdata(pd);
+		return 1;
+	}
+	else {
+		ParusData* res = stack_get_at(stk, parusdata_tointeger(pd));
+		
+		stack_push(stk, res);
+		free_parusdata(pd);
+		return 0;
+	}
+}
+
 static int add(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
 	ParusData* pd1 = stack_pull(stk);
@@ -282,71 +403,14 @@ static int out(void* stk, void* lex) {
 
 }
 
-static int define(void* stk, void* lex) {
-	ParusData* sym = stack_pull(stk);
-	ParusData* val = stack_pull(stk);
-
-	if (sym == NULL || val == NULL) {
-		free_parusdata(sym);
-		free_parusdata(val);
-		printf("CANNOT DEFINE\n");
-		return 1;
-	}
-	if (sym->type != SYMBOL) {
-		free_parusdata(sym);
-		free_parusdata(val);
-		printf("CAN ONLY BIND TO SYMBOLS\n");
-		return 1;
-	}
-	lexicon_define(lex, parusdata_getsymbol(sym), val);
-	free_parusdata(sym);
-	
+static int stkprint(void* stk, void* lex) {
+	stack_print(stk);
 	return 0;
 }
 
-
-static int delete(void* stk, void* lex) {
-	ParusData* sym = stack_pull(stk);
-	if (sym == NULL) {
-		free_parusdata(sym);
-		printf("CANNOT DELETE\n");
-		return 1;
-	}
-	if (sym->type != SYMBOL) {
-		free_parusdata(sym);
-		printf("CAN ONLY DELETE BINDED SYMBOLS\n");
-		return 1;
-	}
-	lexicon_delete(lex, parusdata_getsymbol(sym));
-	free_parusdata(sym);
+static int lexprint(void* stk, void* lex) {
+	lexicon_print(lex);
 	return 0;
-}
-
-static int if_func(void* stk, void* lex) {
-	ParusData* do_false	= stack_pull(stk);
-	ParusData* do_true 	= stack_pull(stk);
-	ParusData* con 		= stack_pull(stk);
-
-	char act = 0;
-
-	if (con->type == INTEGER && parusdata_tointeger(con) != 0)
-		act = 1;
-	else if (con->type == DECIMAL && parusdata_todecimal(con) != 0)
-		act = 1;
-
-	if (con) {
-		stack_push(stk, do_true);
-		free_parusdata(con);
-		free_parusdata(do_false);
-		return 0;
-	}
-	else {
-		stack_push(stk, do_false);
-		free_parusdata(con);
-		free_parusdata(do_true);
-		return 0;
-
-	}
 }
 
 static int dpl(void* stk, void* lex) {
@@ -358,19 +422,18 @@ static int dpl(void* stk, void* lex) {
 	return 0;
 }
 
-static int stkprint(void* stk, void* lex) {
-	stack_print(stk);
-	return 0;
-}
-
-static int lexprint(void* stk, void* lex) {
-	lexicon_print(lex);
-	return 0;
-}
-
 Lexicon* predefined_lexicon() {
 	Lexicon* lex = new_lexicon(NULL);
 
+	// basic
+	lexicon_define(lex, "def", new_parusdata_primitive(&define));
+	lexicon_define(lex, "del", new_parusdata_primitive(&delete));
+	lexicon_define(lex, "if", new_parusdata_primitive(&if_func));
+	lexicon_define(lex, "quote", new_parusdata_primitive(&quote));
+	lexicon_define(lex, "@", new_parusdata_primitive(&fetch));
+	lexicon_define(lex, "@.", new_parusdata_primitive(&fetch_copy));
+
+	// arithmatics
 	lexicon_define(lex, "+", new_parusdata_primitive(&add));
 	lexicon_define(lex, "-", new_parusdata_primitive(&subtract));
 	lexicon_define(lex, "*", new_parusdata_primitive(&multiply));
@@ -378,17 +441,15 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "=", new_parusdata_primitive(&equal));
 	lexicon_define(lex, "<", new_parusdata_primitive(&less_than));
 
+	// I/O
 	lexicon_define(lex, "out", new_parusdata_primitive(&out));
-	lexicon_define(lex, "def", new_parusdata_primitive(&define));
-	lexicon_define(lex, "del", new_parusdata_primitive(&delete));
+	lexicon_define(lex, "?stk", new_parusdata_primitive(&stkprint));
+	lexicon_define(lex, "?lex", new_parusdata_primitive(&lexprint));
 
-	lexicon_define(lex, "if", new_parusdata_primitive(&if_func));
-
+	// shortcuts
 	lexicon_define(lex, "dpl", new_parusdata_primitive(&dpl));
 
 
-	lexicon_define(lex, "?stk", new_parusdata_primitive(&stkprint));
-	lexicon_define(lex, "?lex", new_parusdata_primitive(&lexprint));
 
 	return lex;
 
