@@ -131,7 +131,6 @@ ParusData* parusdata_copy(ParusData* original) {
 		mcr->data.compound.instructions = calloc(mcr->data.compound.size, sizeof(ParusData));
 
 		for (int i = 0; i < mcr->data.compound.size; i++)
-			// recursive call
 			mcr->data.compound.instructions[i] = parusdata_copy(original->data.compound.instructions[i]);
 
 		return mcr;
@@ -257,7 +256,6 @@ void free_parusdata(ParusData* pd) {
 			free(pd->data.symbol);
 		else if (pd->type == COMPOUND_MACRO) {
 			for (int i = 0; i < pd->data.compound.size; i++) 
-				// recursive call
 				free_parusdata(pd->data.compound.instructions[i]);
 
 			free(pd->data.compound.instructions);
@@ -457,19 +455,19 @@ void lexicon_print(Lexicon* lex) {
 // EVALUATOR
 // ----------------------------------------------------------------------------------------------------
 
-/* applies a parusdata */
-static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
-	if (pd == NULL) {
-		printf("A\n");
-		return;
+/*
+applies a parusdata 
 
-	}
+the function will automatically free pd if needed
+*/
+static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
+	if (pd == NULL)
+		return;
 
 	if (pd->type == INTEGER || pd->type == DECIMAL) 
 		stack_push(stk, pd);
 	
 	else if (pd->type == SYMBOL) {
-		// recursive call
 		parus_eval(parusdata_getsymbol(pd), stk, lex);
 		free_parusdata(pd);
 	}
@@ -482,11 +480,20 @@ static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 	}
 
 	else if (pd->type == COMPOUND_MACRO) 
-		// mutual recursive call
 		apply_compound(pd, stk, lex);
 }
 
-/* handles compound macros */
+/* 
+handles compound macros
+
+the function will automatically free mcr if needed
+
+An important observion about PARUS BEHAVIOR is that the last call 
+of macro can run in the same call of the original macro.
+
+As such the last instruction in the sequence is optimized.
+
+*/
 static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 	static int call_depth = 0;
 	if (call_depth > MAXIMUM_CALL_DEPTH) {
@@ -510,29 +517,79 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 		}
 	}
 
-	/*ParusData* last = mcr->data.compound.instructions[mcr->data.compound.size -1];
+	
+	ParusData* last = mcr->data.compound.instructions[mcr->data.compound.size -1];
 
 	if (last->type == INTEGER || last->type == DECIMAL || last->type == COMPOUND_MACRO)
-		stack_push(stk, parusdata_copy(last));
+		stack_push(stk, parusdata_copy(last)); // last is self evaluating
 
 	else {
-		char* sym_expr = copy_string(parusdata_getsymbol(last));
-		if (is_imperative(sym_expr)) {
+		char* name = copy_string(parusdata_getsymbol(last));
+		if (is_imperative(name)) {
+			// no longer needed
+			free(name);
+			free_parusdata(mcr);
+
 			ParusData* top = stack_pull(stk);
-			if (top->type == COMPOUND_MACRO) {
-				free(sym_expr);
-				free_parusdata(mcr);
-				mcr = top;
-				goto tailcall;
-			}
-			else {
+			
+			// if top of the stack is neither a symbol or macro
+			if (top->type != COMPOUND_MACRO && top->type != SYMBOL)
 				apply(top, stk, lex);
 
+			else {
+				if (top->type == COMPOUND_MACRO) {
+					// applying the top of the stack
+					mcr = top;
+					goto tailcall;
+				}
+				// top of the stack is symbol
+				else {
+					// get the symbol
+					char* sym = copy_string(parusdata_getsymbol(top));
+					free_parusdata(top);
+
+					// if its quote pass it the evaluator
+					if (is_quoted(sym)) {
+						parus_eval(sym, stk, lex);
+						free(sym);
+					}
+					// if not get the symbols value
+					else {
+						ParusData* pd = lexicon_get(lex, sym);
+						free(sym);
+
+						if (pd == NULL)
+							return;
+
+						if (pd->type != COMPOUND_MACRO)
+							apply(pd, stk, lex);
+						// tail call
+						else {
+							mcr = pd;
+							goto tailcall;
+						}
+					}
+				}
 			}
 		}
+		else {
+			free_parusdata(mcr);
+			ParusData* pd = lexicon_get(lex, name);
+			free(name);
 
+			if (pd == NULL)
+				return;
+			// if the last symbol doesn't represent a compounded macro then apply the instruction
+			if (pd->type != COMPOUND_MACRO)
+				apply(pd, stk, lex);
 
-	}*/
+			// tail call
+			else {
+				mcr = pd;
+				goto tailcall;
+			}
+		}
+	}
 
 
 	call_depth = 0;
@@ -597,7 +654,7 @@ void parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 
 /* evaluate a literal string */
 void parus_literal_eval(const char* literal, Stack* stk, Lexicon* lex) {
-	char* nexpr = copy_string((char*)literal);
+	char* nexpr = copy_string((char*)literal); // copy_string doesn't change the memory
 
 	parus_eval(nexpr, stk, lex);
 	free(nexpr);
