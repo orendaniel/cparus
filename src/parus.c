@@ -195,7 +195,6 @@ ParusData* new_parusdata_primitive(primitve_t p) {
 }
 
 /* make a new parusdata as compounded macro */
-// TODO IF COMPOUND CASE
 ParusData* new_parusdata_compound(char* expr) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
@@ -204,12 +203,28 @@ ParusData* new_parusdata_compound(char* expr) {
 		pd->data.compound.size 			= 0;
 		pd->type = COMPOUND_MACRO;
 
-		char* token = strtok(expr, " ");
+		static char* token;
+		static char* rest;
+		rest = expr;
 
 		char terminated = 0;
 
-		while (token != NULL) {
-			if (is_termination(token)) {
+		while ((token = strtok_r(rest, " ", &rest))) {
+
+			if (is_compound(token)) {
+				ParusData* submcr = new_parusdata_compound(rest);
+
+				if (submcr == NULL) {
+					free_parusdata(submcr);
+					goto unterminated;
+				}
+
+				insert_instruction(pd, submcr);
+				continue; // continue to next token
+
+			}
+				
+			else if (is_termination(token)) {
 				terminated = 1;
 				break;
 			}
@@ -222,13 +237,13 @@ ParusData* new_parusdata_compound(char* expr) {
 
 			else if (is_symbol(token))
 				insert_instruction(pd, new_parusdata_symbol(copy_string(token)));
-
-			token = strtok(NULL, " ");
 		}
 		
 		if (!terminated) {
 			printf("UN-TERMINATED MACRO\n");
+			unterminated:
 			free_parusdata(pd);
+			return NULL;
 		}
 	}
 
@@ -382,19 +397,6 @@ void lexicon_define(Lexicon* lex, char* name, ParusData* pd) {
 	}
 }
 
-/* redefines an entry on the lexicon */
-void lexicon_redefine(Lexicon* lex, char* name, ParusData* pd) {
-	for (int i = lex->size -1; i >= 0; i--) 
-		if (strcmp(lex->entries[i].name, name) == 0) {
-			free_parusdata(lex->entries[i].value);
-			lex->entries[i].value = pd;
-			return;
-
-		}
-
-	printf("CANNOT REDEFINE AN UNDEFINED ENTRY - %s\n", name);
-}
-
 /* deletes an entry from the lexicon */
 void lexicon_delete(Lexicon* lex, char* name) {
 	int index = 0;
@@ -457,8 +459,11 @@ void lexicon_print(Lexicon* lex) {
 
 /* applies a parusdata */
 static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
-	if (pd == NULL) 
+	if (pd == NULL) {
+		printf("A\n");
 		return;
+
+	}
 
 	if (pd->type == INTEGER || pd->type == DECIMAL) 
 		stack_push(stk, pd);
@@ -483,54 +488,54 @@ static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 
 /* handles compound macros */
 static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
+	static int call_depth = 0;
+	if (call_depth > MAXIMUM_CALL_DEPTH) {
+		printf("INSUFFICIENT DATA FOR MEANINGFUL ANSWER\n");
+		call_depth = 0;
+		return;
+	}
 
 	tailcall:
-	for (int i = 0; i < mcr->data.compound.size; i++) {
+	for (int i = 0; i < mcr->data.compound.size -1; i++) {
 		ParusData* instr = mcr->data.compound.instructions[i];
 
 		if (instr->type == INTEGER || instr->type == DECIMAL || instr->type == COMPOUND_MACRO)
 			stack_push(stk, parusdata_copy(instr));
 
-		// TODO REMAKE THE TAIL CALL
-		// last instruction
-		else if (i +1 == mcr->data.compound.size) {
-			// TODO HANDLE IF TOP OF THE STACK IS A COMPOUND
-			if (strcmp(parusdata_getsymbol(instr), "!") == 0) {
-				ParusData* pd_sym 	= stack_pull(stk); // copy instruction
-				// get the binding
-				ParusData* next_mcr = lexicon_get(lex, parusdata_getsymbol(pd_sym)); 
+		else {
+			call_depth++;
+			char* sym_expr = copy_string(parusdata_getsymbol(instr));
+			parus_eval(sym_expr, stk, lex);
+			free(sym_expr);
+		}
+	}
 
-				free_parusdata(pd_sym);
+	/*ParusData* last = mcr->data.compound.instructions[mcr->data.compound.size -1];
+
+	if (last->type == INTEGER || last->type == DECIMAL || last->type == COMPOUND_MACRO)
+		stack_push(stk, parusdata_copy(last));
+
+	else {
+		char* sym_expr = copy_string(parusdata_getsymbol(last));
+		if (is_imperative(sym_expr)) {
+			ParusData* top = stack_pull(stk);
+			if (top->type == COMPOUND_MACRO) {
+				free(sym_expr);
 				free_parusdata(mcr);
-
-				mcr = next_mcr;
-				if (mcr->type == COMPOUND_MACRO)
-					goto tailcall;
-				else
-					goto canceltailcall;
+				mcr = top;
+				goto tailcall;
 			}
 			else {
-				ParusData* pd_sym 	= parusdata_copy(instr); // copy instruction
-				// get the binding
-				ParusData* next_mcr = lexicon_get(lex, parusdata_getsymbol(pd_sym)); 
+				apply(top, stk, lex);
 
-				free_parusdata(pd_sym);
-				free_parusdata(mcr);
-
-				mcr = next_mcr;
-				if (mcr->type == COMPOUND_MACRO)
-					goto tailcall;
-				else
-					goto canceltailcall;
 			}
 		}
 
-		else if (instr->type == SYMBOL) {
-			canceltailcall:
-			parus_eval(parusdata_getsymbol(instr), stk, lex);
-		}
 
-	}
+	}*/
+
+
+	call_depth = 0;
 	free_parusdata(mcr);
 }
 
@@ -547,8 +552,13 @@ void parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 	}
 
 	/* self evaluating forms */
-	if (is_compound(expr))
-		stack_push(stk, new_parusdata_compound(expr + 2));
+	else if (is_compound(expr)) {
+		ParusData* mcr = new_parusdata_compound(expr + 2);
+		if (mcr == NULL)
+			return;
+		stack_push(stk, mcr);
+
+	}
 
 	else if (is_integer(expr)) 
 		stack_push(stk, new_parusdata_integer(atoi(expr)));
@@ -556,7 +566,7 @@ void parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 	else if (is_decimal(expr))
 		stack_push(stk, new_parusdata_decimal(atof(expr)));
 
-	/* imperative form ( that is apply according to the top of the stack )*/
+	/* imperative form ( that is apply according to the top of the stack ) */
 	else if (is_imperative(expr)) {
 		ParusData* top = stack_pull(stk);
 		apply(top, stk, lex);
@@ -578,7 +588,7 @@ void parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 			printf("INVALID QUOTATION FORM - %s\n", expr);
 	}
 
-	/* apply for given name */
+	/* apply for given symbol */
 	else {
 		ParusData* pd = lexicon_get(lex, expr);
 		apply(pd, stk, lex);
@@ -587,9 +597,8 @@ void parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 
 /* evaluate a literal string */
 void parus_literal_eval(const char* literal, Stack* stk, Lexicon* lex) {
-	char* nexpr = malloc(sizeof(literal));
-	for (int i = 0; i < sizeof(literal); i++)
-		nexpr[i] = literal[i];
+	char* nexpr = copy_string((char*)literal);
+
 	parus_eval(nexpr, stk, lex);
 	free(nexpr);
 }

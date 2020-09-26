@@ -31,6 +31,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define COMPOUND_GROWTH 10
 
+#define MAXIMUM_CALL_DEPTH 40000
+
 typedef long 	integer_t;
 typedef double 	decimal_t;
 
@@ -101,7 +103,6 @@ void 		stack_print(Stack* stk);
 
 Lexicon* 	new_lexicon();
 void 		lexicon_define(Lexicon* lex, char* name, ParusData* pd);
-void 		lexicon_redefine(Lexicon* lex, char* name, ParusData* pd);
 void 		lexicon_delete(Lexicon* lex, char* name);
 ParusData* 	lexicon_get(Lexicon* lex, char* name);
 void 		free_lexicon(Lexicon* lex);

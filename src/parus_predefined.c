@@ -305,26 +305,6 @@ static int define(void* stk, void* lex) {
 }
 
 
-static int redefine(void* stk, void* lex) {
-	ParusData* sym = stack_pull(stk);
-	ParusData* val = stack_pull(stk);
-	if (sym == NULL || val == NULL) {
-		free_parusdata(sym);
-		free_parusdata(val);
-		printf("CANNOT REDEFINE\n");
-		return 1;
-	}
-	if (sym->type != SYMBOL) {
-		free_parusdata(sym);
-		free_parusdata(val);
-		printf("CAN ONLY BIND TO SYMBOLS\n");
-		return 1;
-	}
-	lexicon_redefine(lex, parusdata_getsymbol(sym), val);
-	free_parusdata(sym);
-	return 0;
-}
-
 static int delete(void* stk, void* lex) {
 	ParusData* sym = stack_pull(stk);
 	if (sym == NULL) {
@@ -400,7 +380,6 @@ Lexicon* predefined_lexicon() {
 
 	lexicon_define(lex, "out", new_parusdata_primitive(&out));
 	lexicon_define(lex, "def", new_parusdata_primitive(&define));
-	lexicon_define(lex, "redef", new_parusdata_primitive(&redefine));
 	lexicon_define(lex, "del", new_parusdata_primitive(&delete));
 
 	lexicon_define(lex, "if", new_parusdata_primitive(&if_func));
