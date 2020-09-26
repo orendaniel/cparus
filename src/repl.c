@@ -31,20 +31,33 @@ int main() {
 	printf("CParus is free software under the GPLV3 license\n");
 	printf("Oren Daniel, Ra'anana - Israel, 2020\n\n");
 
+
 	while (1) {
+		
 		char* input = readline("CPARUS> ");
+
+		char* token;
+		char* rest = input;
+
 		if (!input)
 			break;
 
 		add_history(input);
-
-		//char* token = strtok(input, " ");
-
-		//while (token != NULL) {
-			parus_eval(input, stk, lex);
-			//token = strtok(NULL, " ");
-		//}
-
+		
+		while ((token = strtok_r(rest, " ", &rest))) {
+			if (strcmp(token, '('))
+				parus_eval(token, stk, lex);
+			else {
+				int 	paren_count = 1;
+				char* 	buffer 		= calloc(strlen(rest) +1, sizeof(char)); 
+				buffer[0] = '('
+				int i = 0;
+				while (rest[i] != '\0') {
+					buffer[i +2] 
+					i++;
+				}
+			}
+		}
 		free(input);
 	}
 
