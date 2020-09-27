@@ -480,6 +480,46 @@ static int lexprint(void* stk, void* lex) {
 	return 0;
 }
 
+static int for_macro(void* stk, void* lex) {
+
+	ParusData* fn 	= stack_pull(stk);
+	ParusData* inc 	= stack_pull(stk);
+	ParusData* max 	= stack_pull(stk);
+	ParusData* min 	= stack_pull(stk);
+	ParusData* sym 	= stack_pull(stk);
+
+	if (fn->type != COMPOUND_MACRO || inc->type != INTEGER ||
+			min->type != INTEGER || max->type != INTEGER ||
+			sym->type != SYMBOL) {
+		
+		fprintf(stderr, "WRONG TYPES OF PARAMETERS GIVEN\n");
+		fprintf(stderr, "SYMBOL INC MIN MAX FN\n");
+		free_parusdata(fn);
+		free_parusdata(inc);
+		free_parusdata(min);
+		free_parusdata(max);
+		free_parusdata(sym);
+		return 1;
+	}
+
+	for (int i = parusdata_tointeger(min); i < parusdata_tointeger(max); i += parusdata_tointeger(inc)) {
+		lexicon_define(lex, parusdata_getsymbol(sym), new_parusdata_integer(i));
+
+		stack_push(stk, parusdata_copy(fn));
+		parus_literal_eval("!", stk, lex);
+
+		lexicon_delete(lex, parusdata_getsymbol(sym));
+	}
+
+	free_parusdata(fn);
+	free_parusdata(inc);
+	free_parusdata(min);
+	free_parusdata(max);
+	free_parusdata(sym);
+	return 0;
+
+}
+
 Lexicon* predefined_lexicon() {
 	Lexicon* lex = new_lexicon(NULL);
 
@@ -506,6 +546,7 @@ Lexicon* predefined_lexicon() {
 	// shortcuts
 	lexicon_define(lex, "DPL", new_parusdata_primitive(&dpl));
 	lexicon_define(lex, "DROP", new_parusdata_primitive(&drop));
+	lexicon_define(lex, "FOR", new_parusdata_primitive(&for_macro));
 
 
 	lexicon_define(lex, "?stk", new_parusdata_primitive(&stkprint));
