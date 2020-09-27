@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "parus.h"
 #include "parus_predefined.h"
 
+
 void clear_buffer(char* buffer) {
     int i = 0;
     while (buffer[i] != '\0') {
@@ -44,17 +45,48 @@ int parencount(char* str) {
 	return result;
 }
 
-		
-
-int main() {
-	Stack* 		stk = new_stack();
-	Lexicon* 	lex = predefined_lexicon();
-
+void print_title() {
 	printf("CParus version 0\n");
 	printf("CParus is free software under the GPLV3 license\n");
 	printf("Oren Daniel, Ra'anana - Israel, 2020\n\n");
 
-	while (1) {
+}
+
+void print_help() {
+	printf("\nParus - Postfixed Reprogrammable Stack language\n");
+	printf("Visit https://gitlab.com/oren_daniel/cparus for instructions and details\n");
+	printf("Author email oren_daniel@protonmail.com\n\n");
+
+}
+
+
+int main(int argc, char** argv) {
+	char 	norepl 		= 0;
+	char 	help 		= 0;
+
+	for (int i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "-norepl") == 0)
+			norepl = 1;
+		else if (strcmp(argv[i], "-help") == 0)
+			help = 1;
+
+	}
+
+	if (help) {
+		print_title();
+		print_help();
+
+		return 0;
+	}
+
+	Stack* 		stk = new_stack();
+	Lexicon* 	lex = predefined_lexicon();
+
+	// IMPLEMENT FILE READING
+
+	if (!norepl) 
+		print_title();
+	while (!norepl) {
 		
 		char* input = readline("CParus> ");
 		while (parencount(input) > 0) {
@@ -63,7 +95,7 @@ int main() {
 			int input_len 		= strlen(input) +1;
 			int addition_len 	= strlen(addition) +1;
 
-			input = realloc(input,  input_len + addition_len);
+			input = realloc(input, input_len + addition_len);
 
 			if (input == NULL) {
 				printf("Cannot read command\n");
@@ -82,19 +114,19 @@ int main() {
 
 		add_history(input);
 		
-
 		char* buffer = malloc((strlen(input)+1)*sizeof(char));
+
 		clear_buffer(buffer);
 		int i = 0;
 		int j = 0;
+
 		char c;
 
 		while ((c = input[i++]) != '\0') {
-			if (c == ';')
+			if (c == ';') // comment escape line
 				break;
-			if (isspace(c) && parencount(buffer) <= 0) {
+			if (isspace(c) && parencount(buffer) <= 0) { // if balanced expression
 				buffer[j] = '\0';
-
 
 				int e = parus_eval(buffer, stk, lex);
 
@@ -115,7 +147,6 @@ int main() {
 		free(buffer);
 		free(input);
 	}
-	
 	
 	free_stack(stk);
 	free_lexicon(lex);

@@ -94,6 +94,7 @@ static char is_symbol(char* s) {
 }
 
 
+/* inserts an instruction to a mcr */
 static void insert_instruction(ParusData* mcr, ParusData* instr) {
 	if (mcr->type != COMPOUND_MACRO) {
 		printf("CANNOT INSERT INSTRUCTION FOR A NON MACRO\n");

@@ -434,21 +434,14 @@ static int lexprint(void* stk, void* lex) {
 	return 0;
 }
 
-static int now(void* stk, void* lex) {
-	stack_push(stk, new_parusdata_decimal((decimal_t)clock() / CLOCKS_PER_SEC));
-	return 0;
-	
-}
-
-
 Lexicon* predefined_lexicon() {
 	Lexicon* lex = new_lexicon(NULL);
 
 	// basic
-	lexicon_define(lex, "def", new_parusdata_primitive(&define));
-	lexicon_define(lex, "del", new_parusdata_primitive(&delete));
-	lexicon_define(lex, "if", new_parusdata_primitive(&if_func));
-	lexicon_define(lex, "quote", new_parusdata_primitive(&quote));
+	lexicon_define(lex, "DEF", new_parusdata_primitive(&define));
+	lexicon_define(lex, "DEL", new_parusdata_primitive(&delete));
+	lexicon_define(lex, "IF", new_parusdata_primitive(&if_func));
+	lexicon_define(lex, "QUOTE", new_parusdata_primitive(&quote));
 	lexicon_define(lex, "@", new_parusdata_primitive(&fetch));
 	lexicon_define(lex, "@.", new_parusdata_primitive(&fetch_copy));
 
@@ -461,16 +454,15 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "<", new_parusdata_primitive(&less_than));
 
 	// I/O
-	lexicon_define(lex, "out", new_parusdata_primitive(&out));
+	lexicon_define(lex, "OUT", new_parusdata_primitive(&out));
 
 	// shortcuts
-	lexicon_define(lex, "dpl", new_parusdata_primitive(&dpl));
-	lexicon_define(lex, "drop", new_parusdata_primitive(&drop));
+	lexicon_define(lex, "DPL", new_parusdata_primitive(&dpl));
+	lexicon_define(lex, "DROP", new_parusdata_primitive(&drop));
 
 
 	lexicon_define(lex, "?stk", new_parusdata_primitive(&stkprint));
 	lexicon_define(lex, "?lex", new_parusdata_primitive(&lexprint));
-	lexicon_define(lex, "now", new_parusdata_primitive(&now));
 
 	return lex;
 
