@@ -61,8 +61,7 @@ int main() {
 		parus_eval(input, stk, lex);
 		free(input);
 	}
-
-
+	
 	free_stack(stk);
 	free_lexicon(lex);
 

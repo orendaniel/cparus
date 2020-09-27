@@ -31,7 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define COMPOUND_GROWTH 10
 
-#define MAXIMUM_CALL_DEPTH 10000
+#define MAXIMUM_CALL_DEPTH 25000
 
 typedef long 	integer_t;
 typedef double 	decimal_t;

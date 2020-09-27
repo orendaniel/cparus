@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex);
 static void apply(ParusData* mcr, Stack* stk, Lexicon* lex);
+
 // HELPERS
 // ----------------------------------------------------------------------------------------------------
 
@@ -504,7 +505,7 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 	static int call_depth = 0;
 	if (call_depth > MAXIMUM_CALL_DEPTH) {
 		printf("INSUFFICIENT DATA FOR MEANINGFUL ANSWER\n");
-		call_depth = 0;
+		exit(EXIT_FAILURE);
 		return;
 	}
 
@@ -547,6 +548,7 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 			// if top of the stack is neither a symbol or macro
 			if (top->type != COMPOUND_MACRO && top->type != SYMBOL)
 				apply(top, stk, lex);
+
 
 			else {
 				if (top->type == COMPOUND_MACRO) {
