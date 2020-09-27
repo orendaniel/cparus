@@ -26,13 +26,13 @@ static int define(void* stk, void* lex) {
 	if (sym == NULL || val == NULL) {
 		free_parusdata(sym);
 		free_parusdata(val);
-		printf("CANNOT DEFINE\n");
+		fprintf(stderr, "CANNOT DEFINE\n");
 		return 1;
 	}
 	if (sym->type != SYMBOL) {
 		free_parusdata(sym);
 		free_parusdata(val);
-		printf("CAN ONLY BIND TO SYMBOLS\n");
+		fprintf(stderr, "CAN ONLY BIND TO SYMBOLS\n");
 		return 1;
 	}
 	lexicon_define(lex, parusdata_getsymbol(sym), val);
@@ -45,12 +45,12 @@ static int delete(void* stk, void* lex) {
 	ParusData* sym = stack_pull(stk);
 	if (sym == NULL) {
 		free_parusdata(sym);
-		printf("CANNOT DELETE\n");
+		fprintf(stderr, "CANNOT DELETE\n");
 		return 1;
 	}
 	if (sym->type != SYMBOL) {
 		free_parusdata(sym);
-		printf("CAN ONLY DELETE BINDED SYMBOLS\n");
+		fprintf(stderr, "CAN ONLY DELETE BINDED SYMBOLS\n");
 		return 1;
 	}
 	lexicon_delete(lex, parusdata_getsymbol(sym));
@@ -113,7 +113,7 @@ static int fetch(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
 
 	if (pd->type != INTEGER) {
-		printf("INDEX MUST BE AN INTEGER\n");
+		fprintf(stderr, "INDEX MUST BE AN INTEGER\n");
 		free_parusdata(pd);
 		return 1;
 	}
@@ -131,7 +131,7 @@ static int fetch_copy(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
 
 	if (pd->type != INTEGER) {
-		printf("INDEX MUST BE AN INTEGER\n");
+		fprintf(stderr, "INDEX MUST BE AN INTEGER\n");
 		free_parusdata(pd);
 		return 1;
 	}
@@ -148,7 +148,7 @@ static int add(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
 	ParusData* pd1 = stack_pull(stk);
 	if (pd2 == NULL || pd1 == NULL) {
-		printf("EXPECTED TWO NUMBERS\n");
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
 		free_parusdata(pd1);
 		free_parusdata(pd2);
 		return 1;
@@ -175,7 +175,7 @@ static int add(void* stk, void* lex) {
 		stack_push(stk, new_parusdata_decimal((decimal_t)a + b));
 	}
 	else {
-		printf("EXPECTED TWO NUMBERS\n");
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
 		return 1;
 
 	}
@@ -189,7 +189,7 @@ static int subtract(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
 	ParusData* pd1 = stack_pull(stk);
 	if (pd2 == NULL || pd1 == NULL) {
-		printf("EXPECTED TWO NUMBERS\n");
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
 		free_parusdata(pd1);
 		free_parusdata(pd2);
 		return 1;
@@ -216,7 +216,7 @@ static int subtract(void* stk, void* lex) {
 		stack_push(stk, new_parusdata_decimal((decimal_t)a - b));
 	}
 	else {
-		printf("EXPECTED TWO NUMBERS\n");
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
 		return 1;
 
 	}
@@ -230,7 +230,7 @@ static int multiply(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
 	ParusData* pd1 = stack_pull(stk);
 	if (pd2 == NULL || pd1 == NULL) {
-		printf("EXPECTED TWO NUMBERS\n");
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
 		free_parusdata(pd1);
 		free_parusdata(pd2);
 		return 1;
@@ -257,7 +257,7 @@ static int multiply(void* stk, void* lex) {
 		stack_push(stk, new_parusdata_decimal((decimal_t)a * b));
 	}
 	else {
-		printf("EXPECTED TWO NUMBERS\n");
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
 		return 1;
 
 	}
@@ -271,7 +271,7 @@ static int divide(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
 	ParusData* pd1 = stack_pull(stk);
 	if (pd2 == NULL || pd1 == NULL) {
-		printf("EXPECTED TWO NUMBERS\n");
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
 		free_parusdata(pd1);
 		free_parusdata(pd2);
 		return 1;
@@ -279,7 +279,7 @@ static int divide(void* stk, void* lex) {
 
 	if ((pd2->type == INTEGER && parusdata_tointeger(pd2) == 0) || 
 			(pd2->type == DECIMAL && parusdata_todecimal(pd2) == 0)) 
-		printf("WARNING: DIVISION BY ZERO IS UNDEFINED BEHAVIOR\n");
+		fprintf(stderr, "WARNING: DIVISION BY ZERO IS UNDEFINED BEHAVIOR\n");
 
 
 	if (pd1->type == INTEGER && pd2->type == INTEGER) {
@@ -303,7 +303,7 @@ static int divide(void* stk, void* lex) {
 		stack_push(stk, new_parusdata_decimal((decimal_t)a / b));
 	}
 	else {
-		printf("EXPECTED TWO NUMBERS\n");
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
 		return 1;
 
 	}
@@ -318,7 +318,7 @@ static int equal(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
 	ParusData* pd1 = stack_pull(stk);
 	if (pd2 == NULL || pd1 == NULL) {
-		printf("Excepted two numbers\n");
+		fprintf(stderr, "Excepted two numbers\n");
 		free_parusdata(pd1);
 		free_parusdata(pd2);
 		return 1;
@@ -345,7 +345,7 @@ static int equal(void* stk, void* lex) {
 		stack_push(stk, new_parusdata_integer((decimal_t)a == b));
 	}
 	else {
-		printf("EXPECTED TWO NUMBERS\n");
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
 		return 1;
 
 	}
@@ -359,7 +359,7 @@ static int less_than(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
 	ParusData* pd1 = stack_pull(stk);
 	if (pd2 == NULL || pd1 == NULL) {
-		printf("Excepted two numbers\n");
+		fprintf(stderr, "Excepted two numbers\n");
 		free_parusdata(pd1);
 		free_parusdata(pd2);
 		return 1;
@@ -386,7 +386,7 @@ static int less_than(void* stk, void* lex) {
 		stack_push(stk, new_parusdata_integer((decimal_t)a < b));
 	}
 	else {
-		printf("EXPECTED TWO NUMBERS\n");
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
 		return 1;
 
 	}
@@ -400,7 +400,7 @@ static int greater_than(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
 	ParusData* pd1 = stack_pull(stk);
 	if (pd2 == NULL || pd1 == NULL) {
-		printf("Excepted two numbers\n");
+		fprintf(stderr, "Excepted two numbers\n");
 		free_parusdata(pd1);
 		free_parusdata(pd2);
 		return 1;
@@ -427,7 +427,7 @@ static int greater_than(void* stk, void* lex) {
 		stack_push(stk, new_parusdata_integer((decimal_t)a > b));
 	}
 	else {
-		printf("EXPECTED TWO NUMBERS\n");
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
 		return 1;
 
 	}

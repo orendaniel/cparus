@@ -97,7 +97,7 @@ static char is_symbol(char* s) {
 /* inserts an instruction to a mcr */
 static void insert_instruction(ParusData* mcr, ParusData* instr) {
 	if (mcr->type != COMPOUND_MACRO) {
-		printf("CANNOT INSERT INSTRUCTION FOR A NON MACRO\n");
+		fprintf(stderr, "CANNOT INSERT INSTRUCTION FOR A NON MACRO\n");
 		return;
 	}
 	
@@ -247,7 +247,7 @@ ParusData* new_parusdata_compound(char* expr) {
 		}
 		
 		if (!terminated) {
-			printf("UN-TERMINATED MACRO\n");
+			fprintf(stderr, "UN-TERMINATED MACRO\n");
 			unterminated:
 			free_parusdata(pd);
 			return NULL;
@@ -399,7 +399,7 @@ void lexicon_define(Lexicon* lex, char* name, ParusData* pd) {
 			lex->entries[lex->size++] = ent;
 		}
 		else
-			printf("LEXICON OVERFLOW\n");
+			fprintf(stderr, "LEXICON OVERFLOW\n");
 	}
 }
 
@@ -420,7 +420,7 @@ void lexicon_delete(Lexicon* lex, char* name) {
 			return;
 		}
 	
-	printf("CANNOT DELETE AN UNDEFINED ENTRY - %s\n", name);
+	fprintf(stderr, "CANNOT DELETE AN UNDEFINED ENTRY - %s\n", name);
 }
 
 /* gets a copy of an entry */
@@ -429,7 +429,7 @@ ParusData* lexicon_get(Lexicon* lex, char* name) {
 		if (strcmp(lex->entries[i].name, name) == 0)
 			return parusdata_copy(lex->entries[i].value);
 
-	printf("UNDEFINED ENTRY - %s\n", name);
+	fprintf(stderr, "UNDEFINED ENTRY - %s\n", name);
 	return NULL;
 }
 
@@ -483,7 +483,7 @@ static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 	else if (pd->type == PRIMITIVE_MACRO) {
 		int result = (*pd->data.primitve)(stk, lex);
 		if (result)
-			printf("ERROR\n");
+			fprintf(stderr, "ERROR\n");
 		free_parusdata(pd);
 	}
 
@@ -505,7 +505,7 @@ As such the last instruction in the sequence is optimized.
 static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 	static int call_depth = 0;
 	if (call_depth > MAXIMUM_CALL_DEPTH) {
-		printf("INSUFFICIENT DATA FOR MEANINGFUL ANSWER\n");
+		fprintf(stderr, "INSUFFICIENT DATA FOR MEANINGFUL ANSWER\n");
 		exit(EXIT_FAILURE);
 		return;
 	}
@@ -622,7 +622,7 @@ NOT IF OPERATION RAN CORRECTLY
 int parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 
 	if (is_termination(expr)) {
-		printf("EXPECTED MACRO\n");
+		fprintf(stderr, "EXPECTED MACRO\n");
 		return 1;
 	}
 
@@ -663,7 +663,7 @@ int parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 			stack_push(stk, new_parusdata_symbol(copy_string(expr +1)));
 
 		else {
-			printf("INVALID QUOTATION FORM - %s\n", expr);
+			fprintf(stderr, "INVALID QUOTATION FORM - %s\n", expr);
 			return 1;
 		}
 	}

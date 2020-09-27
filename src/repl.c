@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
 		
 		char* input = readline("CParus> ");
 		while (parencount(input) > 0) {
-			char* addition = readline("");
+			char* addition = readline(">");
 
 			int input_len 		= strlen(input) +1;
 			int addition_len 	= strlen(addition) +1;
@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
 			input = realloc(input, input_len + addition_len);
 
 			if (input == NULL) {
-				printf("Cannot read command\n");
+				fprintf(stderr, "Cannot read command\n");
 				exit(EXIT_FAILURE);
 			}
 
