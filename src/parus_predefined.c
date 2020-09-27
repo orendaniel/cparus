@@ -277,6 +277,11 @@ static int divide(void* stk, void* lex) {
 		return 1;
 	}
 
+	if ((pd2->type == INTEGER && parusdata_tointeger(pd2) == 0) || 
+			(pd2->type == DECIMAL && parusdata_todecimal(pd2) == 0)) 
+		printf("WARNING: DIVISION BY ZERO IS UNDEFINED BEHAVIOR\n");
+
+
 	if (pd1->type == INTEGER && pd2->type == INTEGER) {
 		integer_t a = parusdata_tointeger(pd1);
 		integer_t b = parusdata_tointeger(pd2);
