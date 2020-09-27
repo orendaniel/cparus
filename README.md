@@ -23,6 +23,8 @@ It doesn't use any bytecode compliation, as a result programs won't run quickly.
 However it optimize the last call in a macro ( tail call ).
 
 
+CParus can also be used as a library, for details refer to repl.c
+
 # The 4 Laws of the Parus language
 
 if token is self evaluating:
