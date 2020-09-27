@@ -23,6 +23,38 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex);
 static void apply(ParusData* mcr, Stack* stk, Lexicon* lex);
 // HELPERS
 // ----------------------------------------------------------------------------------------------------
+
+static int strcount(char* s) {
+	int i = 0;
+	while (!isspace(s[i]) && s[i] != '\0')
+		i++;
+
+	return i;
+}
+
+static char* copy_string(char* s) {
+	int size = 0;
+	while (s[size] != '\0')
+		++size;
+	char* ns = calloc(size, sizeof(char));
+	for (int i = 0; i < size; i++)
+		ns[i] = s[i];
+
+	return ns;
+}
+
+static char is_comment(char* s) {
+	return s[0] == ';';
+}
+
+static char is_compound(char* s) {
+	return s[0] == '(' && strcount(s) == 1;
+}
+
+static char is_termination(char* s) {
+	return s[0] == ')' && strcount(s) == 1;
+}
+
 static char is_integer(char* s) {
     if (s == NULL || *s == '\0' || isspace(*s))
       return 0;
@@ -43,24 +75,8 @@ static char is_quoted(char* s) {
 	return s[0] == '\'';
 }
 
-static int strcount(char* s) {
-	int i = 0;
-	while (!isspace(s[i]) && s[i] != '\0')
-		i++;
-
-	return i;
-}
-
 static char is_imperative(char* s) {
 	return s[0] == '!' && strcount(s) == 1;
-}
-
-static char is_compound(char* s) {
-	return s[0] == '(' && strcount(s) == 1;
-}
-
-static char is_termination(char* s) {
-	return s[0] == ')' && strcount(s) == 1;
 }
 
 static char is_symbol(char* s) {
@@ -76,16 +92,6 @@ static char is_symbol(char* s) {
 	return valid;
 }
 
-static char* copy_string(char* s) {
-	int size = 0;
-	while (s[size] != '\0')
-		++size;
-	char* ns = calloc(size, sizeof(char));
-	for (int i = 0; i < size; i++)
-		ns[i] = s[i];
-
-	return ns;
-}
 
 static void insert_instruction(ParusData* mcr, ParusData* instr) {
 	if (mcr->type != COMPOUND_MACRO) {
@@ -614,8 +620,11 @@ void parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 		return;
 	}
 
+	if (strlen(expr) == 0 || is_comment(expr) || isspace(expr[0]))
+		return;
+
 	/* self evaluating forms */
-	else if (is_compound(expr)) {
+	if (is_compound(expr)) {
 		ParusData* mcr = new_parusdata_compound(expr + 2);
 		if (mcr == NULL)
 			return;

@@ -32,7 +32,7 @@ int main() {
 	printf("Oren Daniel, Ra'anana - Israel, 2020\n\n");
 
 
-	/*while (1) {
+	while (1) {
 		
 		char* input = readline("CPARUS> ");
 
@@ -44,7 +44,7 @@ int main() {
 
 		add_history(input);
 		
-		while ((token = strtok_r(rest, " ", &rest))) {
+		/*while ((token = strtok_r(rest, " ", &rest))) {
 			if (strcmp(token, '(') != 0)
 				parus_eval(token, stk, lex);
 			else {
@@ -57,10 +57,11 @@ int main() {
 					i++;
 				}
 			}
-		}
+		}*/
 		parus_eval(input, stk, lex);
 		free(input);
-	}*/
+	}
+
 
 	free_stack(stk);
 	free_lexicon(lex);
