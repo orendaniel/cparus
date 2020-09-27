@@ -45,8 +45,8 @@ else:
 
 spaces are required between parenthesis
 
-( DPL * ) ^2 DEF
-5 '^2 out
+( DPL * ) '^2 DEF
+5 ^2 out
 
 ==> 25
 
