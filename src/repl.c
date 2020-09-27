@@ -38,7 +38,6 @@ int parencount(char* str) {
 			result++;
 		else if (str[i] == ')')
 			result--;
-
 		i++;
 
 	}   
@@ -57,7 +56,26 @@ int main() {
 
 	while (1) {
 		
-		char* input = readline("CPARUS> ");
+		char* input = readline("CParus> ");
+		while (parencount(input) > 0) {
+			char* addition = readline("");
+
+			int input_len 		= strlen(input) +1;
+			int addition_len 	= strlen(addition) +1;
+
+			input = realloc(input,  input_len + addition_len);
+
+			if (input == NULL) {
+				printf("Cannot read command\n");
+				exit(EXIT_FAILURE);
+			}
+
+			input[input_len-1] = ' '; // replace \0 with space
+			for (int i = 0; i < addition_len; i++) 
+				input[input_len +i] = addition[i];
+
+			free(addition);
+		}
 
 		if (!input)
 			break;
@@ -75,10 +93,15 @@ int main() {
 			if (c == ';')
 				break;
 			if (isspace(c) && parencount(buffer) <= 0) {
-				buffer[j +1] = '\0';
-				parus_eval(buffer, stk, lex);
+				buffer[j] = '\0';
+
+
+				int e = parus_eval(buffer, stk, lex);
+
 				clear_buffer(buffer);
 				j = 0;
+				if (e != 0)
+					break;
 			}
 			else  {
 				buffer[j] = c;
@@ -86,7 +109,7 @@ int main() {
 			}
 		}
 
-		buffer[j +1] = '\0';
+		buffer[j] = '\0';
 		parus_eval(buffer, stk, lex);
 		
 		free(buffer);

@@ -614,22 +614,25 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 The Parus Evaluator
 
 Evaluates a single expression at a time 
+
+returns 0 only if parsed correctly
+NOT IF OPERATION RAN CORRECTLY
 */
-void parus_eval(char* expr, Stack* stk, Lexicon* lex) {
+int parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 
 	if (is_termination(expr)) {
 		printf("EXPECTED MACRO\n");
-		return;
+		return 1;
 	}
 
 	if (strlen(expr) == 0 || is_comment(expr) || isspace(expr[0]))
-		return;
+		return 0;
 
 	/* self evaluating forms */
 	if (is_compound(expr)) {
 		ParusData* mcr = new_parusdata_compound(expr + 2);
 		if (mcr == NULL)
-			return;
+			return 0;
 		stack_push(stk, mcr);
 
 	}
@@ -658,8 +661,10 @@ void parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 		else if (is_symbol(expr +1))
 			stack_push(stk, new_parusdata_symbol(copy_string(expr +1)));
 
-		else 
+		else {
 			printf("INVALID QUOTATION FORM - %s\n", expr);
+			return 1;
+		}
 	}
 
 	/* apply for given symbol */
@@ -667,12 +672,14 @@ void parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 		ParusData* pd = lexicon_get(lex, expr);
 		apply(pd, stk, lex);
 	}
+	return 0;
 }
 
 /* evaluate a literal string */
-void parus_literal_eval(const char* literal, Stack* stk, Lexicon* lex) {
+int parus_literal_eval(const char* literal, Stack* stk, Lexicon* lex) {
 	char* nexpr = copy_string((char*)literal); // copy_string doesn't change the memory
 
-	parus_eval(nexpr, stk, lex);
+	int e = parus_eval(nexpr, stk, lex);
 	free(nexpr);
+	return e;
 }
