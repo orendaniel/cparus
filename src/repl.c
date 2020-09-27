@@ -21,7 +21,31 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "parus.h"
 #include "parus_predefined.h"
 
+void clear_buffer(char* buffer) {
+    int i = 0;
+    while (buffer[i] != '\0') {
+        buffer[i] = '\0';
+		i++;
+	}
+}
 
+int parencount(char* str) {
+	int result = 0;
+	int i = 0;
+	while (str[i] != '\0') {
+
+		if (str[i] == '(')
+			result++;
+		else if (str[i] == ')')
+			result--;
+
+		i++;
+
+	}   
+	return result;
+}
+
+		
 
 int main() {
 	Stack* 		stk = new_stack();
@@ -31,36 +55,44 @@ int main() {
 	printf("CParus is free software under the GPLV3 license\n");
 	printf("Oren Daniel, Ra'anana - Israel, 2020\n\n");
 
-
 	while (1) {
 		
 		char* input = readline("CPARUS> ");
-
-		char* token;
-		char* rest = input;
 
 		if (!input)
 			break;
 
 		add_history(input);
 		
-		/*while ((token = strtok_r(rest, " ", &rest))) {
-			if (strcmp(token, '(') != 0)
-				parus_eval(token, stk, lex);
-			else {
-				int 	paren_count = 1;
-				char* 	buffer 		= calloc(strlen(rest) +1, sizeof(char)); 
-				buffer[0] = '(';
-				int i = 0;
-				while (rest[i] != '\0') {
-					buffer[i +2];
-					i++;
-				}
+
+		char* buffer = malloc((strlen(input)+1)*sizeof(char));
+		clear_buffer(buffer);
+		int i = 0;
+		int j = 0;
+		char c;
+
+		while ((c = input[i++]) != '\0') {
+			if (c == ';')
+				break;
+			if (isspace(c) && parencount(buffer) <= 0) {
+				buffer[j +1] = '\0';
+				parus_eval(buffer, stk, lex);
+				clear_buffer(buffer);
+				j = 0;
 			}
-		}*/
-		parus_eval(input, stk, lex);
+			else  {
+				buffer[j] = c;
+				j++;
+			}
+		}
+
+		buffer[j +1] = '\0';
+		parus_eval(buffer, stk, lex);
+		
+		free(buffer);
 		free(input);
 	}
+	
 	
 	free_stack(stk);
 	free_lexicon(lex);
