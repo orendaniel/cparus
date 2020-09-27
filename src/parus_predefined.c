@@ -391,6 +391,47 @@ static int less_than(void* stk, void* lex) {
 	return 0;
 }
 
+static int greater_than(void* stk, void* lex) {
+	ParusData* pd2 = stack_pull(stk);
+	ParusData* pd1 = stack_pull(stk);
+	if (pd2 == NULL || pd1 == NULL) {
+		printf("Excepted two numbers\n");
+		free_parusdata(pd1);
+		free_parusdata(pd2);
+		return 1;
+	}
+
+	if (pd1->type == INTEGER && pd2->type == INTEGER) {
+		integer_t a = parusdata_tointeger(pd1);
+		integer_t b = parusdata_tointeger(pd2);
+		stack_push(stk, new_parusdata_integer(a > b));
+	}
+	else if (pd1->type == DECIMAL && pd2->type == DECIMAL) {
+		decimal_t a = parusdata_todecimal(pd1);
+		decimal_t b = parusdata_todecimal(pd2);
+		stack_push(stk, new_parusdata_integer(a > b));
+	}
+	else if (pd1->type == DECIMAL && pd2->type == INTEGER) {
+		decimal_t a = parusdata_todecimal(pd1);
+		integer_t b = parusdata_tointeger(pd2);
+		stack_push(stk, new_parusdata_integer(a > (decimal_t)b));
+	}
+	else if (pd1->type == INTEGER && pd2->type == DECIMAL) {
+		integer_t a = parusdata_tointeger(pd1);
+		decimal_t b = parusdata_todecimal(pd2);
+		stack_push(stk, new_parusdata_integer((decimal_t)a > b));
+	}
+	else {
+		printf("EXPECTED TWO NUMBERS\n");
+		return 1;
+
+	}
+	
+	free_parusdata(pd1);
+	free_parusdata(pd2);
+	return 0;
+}
+
 static int out(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
 	if (pd == NULL) 
@@ -452,6 +493,7 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "/", new_parusdata_primitive(&divide));
 	lexicon_define(lex, "=", new_parusdata_primitive(&equal));
 	lexicon_define(lex, "<", new_parusdata_primitive(&less_than));
+	lexicon_define(lex, ">", new_parusdata_primitive(&less_than));
 
 	// I/O
 	lexicon_define(lex, "OUT", new_parusdata_primitive(&out));
