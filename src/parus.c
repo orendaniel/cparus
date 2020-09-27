@@ -456,7 +456,7 @@ void lexicon_print(Lexicon* lex) {
 			printf("%s : %s\n", lex->entries[i].name, parusdata_getsymbol(lex->entries[i].value));
 
 		else
-				printf("%s : parusdata@%x\n", lex->entries[i].name, lex->entries[i].value);
+			printf("%s : parusdata@%x\n", lex->entries[i].name, lex->entries[i].value);
 	}
 }
 
@@ -620,7 +620,6 @@ returns 0 only if parsed correctly
 NOT IF OPERATION RAN CORRECTLY
 */
 int parus_eval(char* expr, Stack* stk, Lexicon* lex) {
-
 	if (is_termination(expr)) {
 		fprintf(stderr, "EXPECTED MACRO\n");
 		return 1;
