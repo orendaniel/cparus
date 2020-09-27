@@ -31,14 +31,6 @@ char file_exists(char* filename) {
 	return stat(filename, &buffer) == 0;
 }
 
-int file_size(FILE* f) {
-	fseek(f, 0, SEEK_END);
-	int size = ftell(f);
-	fseek(f, 0, SEEK_SET);
-	return size;
-
-}
-
 void clear_buffer(char* buffer) {
     int i = 0;
     while (buffer[i] != '\0') {
