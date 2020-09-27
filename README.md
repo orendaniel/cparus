@@ -8,6 +8,12 @@ The language is named after Paridae bird family ( Tits, Titmices and Chickadees 
 
 Members of the Paridae family are small and highly intelligent birds.
 
+# NOTE
+
+THIS IS AN EARLY STAGE PROJECT SO SEGFAULTS AND MEMORY LEAKS COULD ACCURE.
+
+Further more some sections in the code should be re-written
+
 
 # Technical Details
 
