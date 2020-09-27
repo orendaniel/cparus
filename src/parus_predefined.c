@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "parus_predefined.h"
+#include <time.h>
 
 static int define(void* stk, void* lex) {
 	ParusData* sym = stack_pull(stk);
@@ -94,8 +95,12 @@ static int quote(void* stk, void* lex) {
 		int 	len 	= strlen(sym) +2; // space for additional quote and '\0'
 		char* 	new_sym = malloc(len * sizeof(char));
 		new_sym[0] = '\'';
-		for (int i = 1; i < len -1; i++)
+
+		int i;
+		for (i = 1; i < len -1; i++)
 			new_sym[i] = sym[i -1];
+		new_sym[i] = '\0';
+
 		free_parusdata(pd);
 		stack_push(stk, new_parusdata_symbol(new_sym));
 
@@ -403,6 +408,22 @@ static int out(void* stk, void* lex) {
 
 }
 
+static int dpl(void* stk, void* lex) {
+	ParusData* pd	= stack_pull(stk);
+	
+	stack_push(stk, pd);
+	stack_push(stk, parusdata_copy(pd));
+
+	return 0;
+}
+
+static int drop(void* stk, void* lex) {
+	ParusData* pd = stack_pull(stk);
+	free_parusdata(pd);
+
+	return 0;
+}
+
 static int stkprint(void* stk, void* lex) {
 	stack_print(stk);
 	return 0;
@@ -413,14 +434,12 @@ static int lexprint(void* stk, void* lex) {
 	return 0;
 }
 
-static int dpl(void* stk, void* lex) {
-	ParusData* pd	= stack_pull(stk);
-	
-	stack_push(stk, pd);
-	stack_push(stk, parusdata_copy(pd));
-
+static int now(void* stk, void* lex) {
+	stack_push(stk, new_parusdata_decimal((decimal_t)clock() / CLOCKS_PER_SEC));
 	return 0;
+	
 }
+
 
 Lexicon* predefined_lexicon() {
 	Lexicon* lex = new_lexicon(NULL);
@@ -443,13 +462,15 @@ Lexicon* predefined_lexicon() {
 
 	// I/O
 	lexicon_define(lex, "out", new_parusdata_primitive(&out));
-	lexicon_define(lex, "?stk", new_parusdata_primitive(&stkprint));
-	lexicon_define(lex, "?lex", new_parusdata_primitive(&lexprint));
 
 	// shortcuts
 	lexicon_define(lex, "dpl", new_parusdata_primitive(&dpl));
+	lexicon_define(lex, "drop", new_parusdata_primitive(&drop));
 
 
+	lexicon_define(lex, "?stk", new_parusdata_primitive(&stkprint));
+	lexicon_define(lex, "?lex", new_parusdata_primitive(&lexprint));
+	lexicon_define(lex, "now", new_parusdata_primitive(&now));
 
 	return lex;
 

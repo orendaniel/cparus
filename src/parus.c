@@ -355,7 +355,7 @@ void stack_print(Stack* stk) {
 			printf("%s, ", parusdata_getsymbol(stk->items[i]));
 
 		else
-			printf("parusdata@%x, ", stk->items[i]->data);
+			printf("parusdata@%x, ", stk->items[i]);
 
 	}
 	printf("\n");
@@ -448,7 +448,7 @@ void lexicon_print(Lexicon* lex) {
 			printf("%s : %s\n", lex->entries[i].name, parusdata_getsymbol(lex->entries[i].value));
 
 		else
-			printf("%s : parusdata@%x\n", lex->entries[i].name, lex->entries[i].value);
+				printf("%s : parusdata@%x\n", lex->entries[i].name, lex->entries[i].value);
 	}
 }
 
@@ -499,6 +499,12 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 	if (call_depth > MAXIMUM_CALL_DEPTH) {
 		printf("INSUFFICIENT DATA FOR MEANINGFUL ANSWER\n");
 		call_depth = 0;
+		return;
+	}
+
+	if (mcr->data.compound.size == 0) {
+		call_depth = 0;
+		free_parusdata(mcr);
 		return;
 	}
 

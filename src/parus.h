@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h>
-#include <string.h> //strcmp only
+#include <string.h>
 #include <ctype.h>
 
 
