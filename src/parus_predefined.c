@@ -532,6 +532,12 @@ static int for_macro(void* stk, void* lex) {
 
 }
 
+int static now(void* stk, void* lex) {
+	stack_push((Stack*)stk, new_parusdata_decimal((decimal_t)clock()/CLOCKS_PER_SEC));
+	return 0;
+
+}
+
 Lexicon* predefined_lexicon() {
 	Lexicon* lex = new_lexicon(NULL);
 
@@ -550,7 +556,6 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "COMPOUND?", new_parusdata_primitive(&is_top_compound));
 	lexicon_define(lex, "SYMBOL?", new_parusdata_primitive(&is_top_symbol));
 	lexicon_define(lex, "NONE?", new_parusdata_primitive(&is_top_null));
-
 
 	// arithmatics
 	lexicon_define(lex, "+", new_parusdata_primitive(&add));
@@ -575,6 +580,9 @@ Lexicon* predefined_lexicon() {
 
 	// syntatic forms
 	lexicon_define(lex, "FOR", new_parusdata_primitive(&for_macro));
+
+	// misc
+	lexicon_define(lex, "NOW", new_parusdata_primitive(&now));
 
 
 	return lex;
