@@ -457,15 +457,30 @@ static int out(void* stk, void* lex) {
 		return 1;
 	
 	if (pd->type == INTEGER)
-		printf("%ld\n", parusdata_tointeger(pd));
+		printf("%ld", parusdata_tointeger(pd));
 	else if (pd->type == DECIMAL)
-		printf("%f\n", parusdata_todecimal(pd));
+		printf("%f", parusdata_todecimal(pd));
 	else if (pd->type == SYMBOL)
-		printf("%s\n", parusdata_getsymbol(pd));
+		printf("%s", parusdata_getsymbol(pd));
 
 	free_parusdata(pd);
 	return 0;
 
+}
+
+static int putcharacter(void* stk, void* lex) {
+	ParusData* pd = stack_pull(stk);
+
+	if (pd->type != INTEGER) {
+		fprintf(stderr, "INDEX MUST BE AN INTEGER\n");
+		free_parusdata(pd);
+		return 1;
+	}
+
+	fputc(parusdata_tointeger(pd), stdout);
+	free_parusdata(pd);
+
+	return 0;
 }
 
 static int dpl(void* stk, void* lex) {
@@ -553,19 +568,22 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "/", new_parusdata_primitive(&divide));
 	lexicon_define(lex, "=", new_parusdata_primitive(&equal));
 	lexicon_define(lex, "<", new_parusdata_primitive(&less_than));
-	lexicon_define(lex, ">", new_parusdata_primitive(&less_than));
+	lexicon_define(lex, ">", new_parusdata_primitive(&greater_than));
 
 	// I/O
 	lexicon_define(lex, "OUT", new_parusdata_primitive(&out));
+	lexicon_define(lex, "PUTC", new_parusdata_primitive(&putcharacter));
 
 	// shortcuts
 	lexicon_define(lex, "DPL", new_parusdata_primitive(&dpl));
 	lexicon_define(lex, "DROP", new_parusdata_primitive(&drop));
-	lexicon_define(lex, "FOR", new_parusdata_primitive(&for_macro));
 
-
+	// debugging
 	lexicon_define(lex, "?stk", new_parusdata_primitive(&stkprint));
 	lexicon_define(lex, "?lex", new_parusdata_primitive(&lexprint));
+
+	// syntatic forms
+	lexicon_define(lex, "FOR", new_parusdata_primitive(&for_macro));
 
 	return lex;
 
