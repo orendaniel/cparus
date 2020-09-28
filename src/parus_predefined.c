@@ -488,7 +488,7 @@ static int for_macro(void* stk, void* lex) {
 	ParusData* min 	= stack_pull(stk);
 	ParusData* sym 	= stack_pull(stk);
 
-	if (fn->type != COMPOUND_MACRO || inc->type != INTEGER ||
+	if (inc->type != INTEGER ||
 			min->type != INTEGER || max->type != INTEGER ||
 			sym->type != SYMBOL) {
 		
