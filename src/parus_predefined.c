@@ -117,7 +117,7 @@ static int fetch(void* stk, void* lex) {
 		free_parusdata(pd);
 		return 1;
 	}
-	if (parusdata_tointeger(pd) < ((Stack*)stk)->size) {
+	if (parusdata_tointeger(pd) < ((Stack*)stk)->size && parusdata_tointeger(pd) >= 0) {
 		ParusData* res = stack_get_at(stk, parusdata_tointeger(pd));
 
 		stack_remove_at(stk, parusdata_tointeger(pd));
@@ -139,7 +139,7 @@ static int fetch_copy(void* stk, void* lex) {
 		free_parusdata(pd);
 		return 1;
 	}
-	if (parusdata_tointeger(pd) < ((Stack*)stk)->size) {
+	if (parusdata_tointeger(pd) < ((Stack*)stk)->size && parusdata_tointeger(pd) >= 0) {
 		ParusData* res = stack_get_at(stk, parusdata_tointeger(pd));
 
 		stack_push(stk, res);
@@ -156,6 +156,66 @@ static int length(void* stk, void* lex) {
 	stack_push(stk, new_parusdata_integer((integer_t) ((Stack*)stk)->size));
 
 	return 0;
+}
+
+static int is_top_integer(void* stk, void* lex) {
+	ParusData* pd = stack_get_at(stk, 0);
+	if (pd->type == INTEGER)
+		stack_push(stk, new_parusdata_integer(1));
+	else
+		stack_push(stk, new_parusdata_integer(0));
+
+	free(pd);
+	return 0;
+}
+
+static int is_top_decimal(void* stk, void* lex) {
+	ParusData* pd = stack_get_at(stk, 0);
+	if (pd->type == DECIMAL)
+		stack_push(stk, new_parusdata_integer(1));
+	else
+		stack_push(stk, new_parusdata_integer(0));
+
+	free(pd);
+	return 0;
+
+}
+
+static int is_top_compound(void* stk, void* lex) {
+	ParusData* pd = stack_get_at(stk, 0);
+	if (pd->type == COMPOUND_MACRO)
+		stack_push(stk, new_parusdata_integer(1));
+	else
+		stack_push(stk, new_parusdata_integer(0));
+
+	free(pd);
+	return 0;
+
+
+}
+
+static int is_top_symbol(void* stk, void* lex) {
+	ParusData* pd = stack_get_at(stk, 0);
+	if (pd->type == SYMBOL)
+		stack_push(stk, new_parusdata_integer(1));
+	else
+		stack_push(stk, new_parusdata_integer(0));
+
+	free(pd);
+	return 0;
+
+}
+
+static int is_top_null(void* stk, void* lex) {
+	ParusData* pd = stack_get_at(stk, 0);
+	if (pd == NULL || pd->type == NONE)
+		stack_push(stk, new_parusdata_integer(1));
+	else
+		stack_push(stk, new_parusdata_integer(0));
+
+	free(pd);
+	return 0;
+
 }
 
 static int add(void* stk, void* lex) {
@@ -472,7 +532,7 @@ static int putcharacter(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
 
 	if (pd->type != INTEGER) {
-		fprintf(stderr, "INDEX MUST BE AN INTEGER\n");
+		fprintf(stderr, "CHAR CODE MUST BE AN INTEGER\n");
 		free_parusdata(pd);
 		return 1;
 	}
@@ -560,6 +620,14 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "@", new_parusdata_primitive(&fetch));
 	lexicon_define(lex, "@.", new_parusdata_primitive(&fetch_copy));
 	lexicon_define(lex, "LEN", new_parusdata_primitive(&length));
+
+	// reflection
+	lexicon_define(lex, "INTEGER?", new_parusdata_primitive(&is_top_integer));
+	lexicon_define(lex, "DECIMAL?", new_parusdata_primitive(&is_top_decimal));
+	lexicon_define(lex, "COMPOUND?", new_parusdata_primitive(&is_top_compound));
+	lexicon_define(lex, "SYMBOL?", new_parusdata_primitive(&is_top_symbol));
+	lexicon_define(lex, "NONE?", new_parusdata_primitive(&is_top_null));
+
 
 	// arithmatics
 	lexicon_define(lex, "+", new_parusdata_primitive(&add));
