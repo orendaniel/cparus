@@ -17,7 +17,7 @@ Further more some sections in the code should be re-written
 
 # Technical Details
 
-This interpeter is built around simplicity,
+This interpreter is built around simplicity,
 It doesn't use any bytecode compliation, as a result programs won't run quickly as they should if they would haven been compiled.
 Once I will be happy with the interpreter I might write a compiler ( in the far future )
 
