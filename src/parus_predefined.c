@@ -117,13 +117,17 @@ static int fetch(void* stk, void* lex) {
 		free_parusdata(pd);
 		return 1;
 	}
-	else {
+	if (parusdata_tointeger(pd) < ((Stack*)stk)->size) {
 		ParusData* res = stack_get_at(stk, parusdata_tointeger(pd));
 
 		stack_remove_at(stk, parusdata_tointeger(pd));
 		stack_push(stk, res);
 		free_parusdata(pd);
 		return 0;
+	}
+	else {
+		fprintf(stderr, "INDEX OUT OF RANGE\n");
+		return 1;
 	}
 }
 
@@ -135,13 +139,23 @@ static int fetch_copy(void* stk, void* lex) {
 		free_parusdata(pd);
 		return 1;
 	}
-	else {
+	if (parusdata_tointeger(pd) < ((Stack*)stk)->size) {
 		ParusData* res = stack_get_at(stk, parusdata_tointeger(pd));
-		
+
 		stack_push(stk, res);
 		free_parusdata(pd);
 		return 0;
 	}
+	else {
+		fprintf(stderr, "INDEX OUT OF RANGE\n");
+		return 1;
+	}
+}
+
+static int length(void* stk, void* lex) {
+	stack_push(stk, new_parusdata_integer((integer_t) ((Stack*)stk)->size));
+
+	return 0;
 }
 
 static int add(void* stk, void* lex) {
@@ -530,6 +544,7 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "QUOTE", new_parusdata_primitive(&quote));
 	lexicon_define(lex, "@", new_parusdata_primitive(&fetch));
 	lexicon_define(lex, "@.", new_parusdata_primitive(&fetch_copy));
+	lexicon_define(lex, "LEN", new_parusdata_primitive(&length));
 
 	// arithmatics
 	lexicon_define(lex, "+", new_parusdata_primitive(&add));
