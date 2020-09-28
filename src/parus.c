@@ -533,7 +533,10 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 			char* sym_expr = copy_string(parusdata_getsymbol(instr));
 			parus_eval(sym_expr, stk, lex);
 			free(sym_expr);
-			call_depth--;
+			if (call_depth <= 0)
+				call_depth = 0;
+			else 
+				call_depth--;
 		}
 	}
 
