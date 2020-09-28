@@ -210,7 +210,7 @@ ParusData* new_parusdata_compound(char* expr) {
 		pd->data.compound.size 			= 0;
 		pd->type = COMPOUND_MACRO;
 
-		static char* token;
+		static char* token; // variables to store the car and cdr of a expr
 		static char* rest;
 		rest = expr;
 
@@ -508,7 +508,7 @@ As such the last instruction in the sequence is optimized.
 
 */
 static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
-	static int call_depth = 0;
+	static int call_depth = 0; // stores the call history
 
 	if (call_depth > MAXIMUM_CALL_DEPTH) {
 		fprintf(stderr, "INSUFFICIENT DATA FOR MEANINGFUL ANSWER\n");
