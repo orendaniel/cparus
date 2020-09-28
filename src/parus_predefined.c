@@ -32,6 +32,23 @@ static char is_number(ParusData* pd) {
 	return pd != NULL && (pd->type == INTEGER || pd->type == DECIMAL);
 }
 
+static char equivalent(ParusData* pd1, ParusData* pd2) {
+	if (pd1 == NULL || pd2 == NULL)
+		return pd1 == NULL && pd2 == NULL;
+
+	if (pd1->type == SYMBOL && pd2->type == SYMBOL)
+		return strcmp(parusdata_getsymbol(pd1), parusdata_getsymbol(pd2)) == 0;
+
+	else if (pd1->type == INTEGER && pd2->type == INTEGER)
+		return parusdata_tointeger(pd1) == parusdata_tointeger(pd2);
+
+	else if (is_number(pd1) && is_number(pd2))
+		return force_decimal(pd1) == force_decimal(pd2);
+
+	else 
+		return pd1 == pd2;
+}
+
 static int define(void* stk, void* lex) {
 	ParusData* sym = stack_pull(stk);
 	ParusData* val = stack_pull(stk);
@@ -171,6 +188,36 @@ static int length(void* stk, void* lex) {
 	return 0;
 }
 
+static int find(void* stk, void* lex) {
+	Stack* 		pstk 	= (Stack*)stk;
+	ParusData* 	pd 		= stack_pull(stk);
+
+	int index = -1;
+
+	for (int i = pstk->size -1; i >= 0; i--) {
+		if (equivalent(pd, pstk->items[i])) {
+			index = i;
+			break;
+		}
+	}
+	stack_push(stk, new_parusdata_integer(pstk->size - (index +1)));
+
+	free_parusdata(pd);
+	return 0;
+
+}
+
+static int eqv(void* stk, void* lex) {
+	ParusData* pd2 = stack_pull(stk);
+	ParusData* pd1 = stack_pull(stk);
+
+	stack_push(stk, new_parusdata_integer(equivalent(pd1, pd2)));
+	
+	free_parusdata(pd1);
+	free_parusdata(pd2);
+	return 0;
+}
+
 static int is_top_integer(void* stk, void* lex) {
 	ParusData* pd = stack_get_at(stk, 0);
 	if (pd->type == INTEGER)
@@ -230,6 +277,7 @@ static int is_top_null(void* stk, void* lex) {
 	return 0;
 
 }
+
 
 static int add(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
@@ -432,6 +480,19 @@ static int greater_than(void* stk, void* lex) {
 	return 0;
 }
 
+static int round_value(void* stk, void* lex) {
+	ParusData* pd = stack_pull(stk);
+	if (!is_number(pd)) {
+		fprintf(stderr, "CANNOT ROUND A NON NUMERIC VALUE\n");
+		free_parusdata(pd);
+		return 1;
+	}
+	stack_push(stk, new_parusdata_integer(force_decimal(pd)));
+	free_parusdata(pd);
+	return 0;
+}
+
+
 static int out(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
 	if (pd == NULL) 
@@ -549,6 +610,8 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "@", new_parusdata_primitive(&fetch));
 	lexicon_define(lex, "@.", new_parusdata_primitive(&fetch_copy));
 	lexicon_define(lex, "LEN", new_parusdata_primitive(&length));
+	lexicon_define(lex, "FIND", new_parusdata_primitive(&find));
+	lexicon_define(lex, "EQV?", new_parusdata_primitive(&eqv));
 
 	// reflection
 	lexicon_define(lex, "INTEGER?", new_parusdata_primitive(&is_top_integer));
@@ -565,6 +628,7 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "=", new_parusdata_primitive(&equal));
 	lexicon_define(lex, "<", new_parusdata_primitive(&less_than));
 	lexicon_define(lex, ">", new_parusdata_primitive(&greater_than));
+	lexicon_define(lex, "ROUND", new_parusdata_primitive(&round_value));
 
 	// I/O
 	lexicon_define(lex, "OUT", new_parusdata_primitive(&out));
