@@ -547,9 +547,10 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 			ParusData* top = stack_pull(stk);
 			
 			// if top of the stack is neither a symbol or macro
-			if (top->type != COMPOUND_MACRO && top->type != SYMBOL)
+			if (top->type != COMPOUND_MACRO && top->type != SYMBOL) {
 				apply(top, stk, lex);
-
+				return; // done
+			}
 
 			else {
 				if (top->type == COMPOUND_MACRO) {
@@ -595,9 +596,10 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 			if (pd == NULL)
 				return;
 			// if the last symbol doesn't represent a compounded macro then apply the instruction
-			if (pd->type != COMPOUND_MACRO)
+			if (pd->type != COMPOUND_MACRO) {
 				apply(pd, stk, lex);
-
+				return; // done
+			}
 			// tail call
 			else {
 				mcr = pd;
