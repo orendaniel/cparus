@@ -19,6 +19,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "parus_predefined.h"
 #include <time.h>
 
+static decimal_t force_decimal(ParusData* pd) {
+	if (pd->type == INTEGER)
+		return (decimal_t)parusdata_tointeger(pd);
+	else if (pd->type == DECIMAL)
+		return parusdata_todecimal(pd);
+	else
+		return 0;
+}
+
+static char is_number(ParusData* pd) {
+	return pd != NULL && (pd->type == INTEGER || pd->type == DECIMAL);
+}
+
 static int define(void* stk, void* lex) {
 	ParusData* sym = stack_pull(stk);
 	ParusData* val = stack_pull(stk);
@@ -221,10 +234,11 @@ static int is_top_null(void* stk, void* lex) {
 static int add(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
 	ParusData* pd1 = stack_pull(stk);
-	if (pd2 == NULL || pd1 == NULL) {
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
+
+	if (!is_number(pd1) || !is_number(pd2)) {
 		free_parusdata(pd1);
 		free_parusdata(pd2);
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
 		return 1;
 	}
 
@@ -233,24 +247,10 @@ static int add(void* stk, void* lex) {
 		integer_t b = parusdata_tointeger(pd2);
 		stack_push(stk, new_parusdata_integer(a + b));
 	}
-	else if (pd1->type == DECIMAL && pd2->type == DECIMAL) {
-		decimal_t a = parusdata_todecimal(pd1);
-		decimal_t b = parusdata_todecimal(pd2);
-		stack_push(stk, new_parusdata_decimal(a + b));
-	}
-	else if (pd1->type == DECIMAL && pd2->type == INTEGER) {
-		decimal_t a = parusdata_todecimal(pd1);
-		integer_t b = parusdata_tointeger(pd2);
-		stack_push(stk, new_parusdata_decimal(a + (decimal_t)b));
-	}
-	else if (pd1->type == INTEGER && pd2->type == DECIMAL) {
-		integer_t a = parusdata_tointeger(pd1);
-		decimal_t b = parusdata_todecimal(pd2);
-		stack_push(stk, new_parusdata_decimal((decimal_t)a + b));
-	}
 	else {
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
-		return 1;
+		decimal_t a = force_decimal(pd1);
+		decimal_t b = force_decimal(pd2);
+		stack_push(stk, new_parusdata_decimal(a + b));
 
 	}
 	
@@ -262,10 +262,11 @@ static int add(void* stk, void* lex) {
 static int subtract(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
 	ParusData* pd1 = stack_pull(stk);
-	if (pd2 == NULL || pd1 == NULL) {
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
+
+	if (!is_number(pd1) || !is_number(pd2)) {
 		free_parusdata(pd1);
 		free_parusdata(pd2);
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
 		return 1;
 	}
 
@@ -274,24 +275,10 @@ static int subtract(void* stk, void* lex) {
 		integer_t b = parusdata_tointeger(pd2);
 		stack_push(stk, new_parusdata_integer(a - b));
 	}
-	else if (pd1->type == DECIMAL && pd2->type == DECIMAL) {
-		decimal_t a = parusdata_todecimal(pd1);
-		decimal_t b = parusdata_todecimal(pd2);
-		stack_push(stk, new_parusdata_decimal(a - b));
-	}
-	else if (pd1->type == DECIMAL && pd2->type == INTEGER) {
-		decimal_t a = parusdata_todecimal(pd1);
-		integer_t b = parusdata_tointeger(pd2);
-		stack_push(stk, new_parusdata_decimal(a - (decimal_t)b));
-	}
-	else if (pd1->type == INTEGER && pd2->type == DECIMAL) {
-		integer_t a = parusdata_tointeger(pd1);
-		decimal_t b = parusdata_todecimal(pd2);
-		stack_push(stk, new_parusdata_decimal((decimal_t)a - b));
-	}
 	else {
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
-		return 1;
+		decimal_t a = force_decimal(pd1);
+		decimal_t b = force_decimal(pd2);
+		stack_push(stk, new_parusdata_decimal(a - b));
 
 	}
 	
@@ -303,10 +290,11 @@ static int subtract(void* stk, void* lex) {
 static int multiply(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
 	ParusData* pd1 = stack_pull(stk);
-	if (pd2 == NULL || pd1 == NULL) {
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
+
+	if (!is_number(pd1) || !is_number(pd2)) {
 		free_parusdata(pd1);
 		free_parusdata(pd2);
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
 		return 1;
 	}
 
@@ -315,24 +303,10 @@ static int multiply(void* stk, void* lex) {
 		integer_t b = parusdata_tointeger(pd2);
 		stack_push(stk, new_parusdata_integer(a * b));
 	}
-	else if (pd1->type == DECIMAL && pd2->type == DECIMAL) {
-		decimal_t a = parusdata_todecimal(pd1);
-		decimal_t b = parusdata_todecimal(pd2);
-		stack_push(stk, new_parusdata_decimal(a * b));
-	}
-	else if (pd1->type == DECIMAL && pd2->type == INTEGER) {
-		decimal_t a = parusdata_todecimal(pd1);
-		integer_t b = parusdata_tointeger(pd2);
-		stack_push(stk, new_parusdata_decimal(a * (decimal_t)b));
-	}
-	else if (pd1->type == INTEGER && pd2->type == DECIMAL) {
-		integer_t a = parusdata_tointeger(pd1);
-		decimal_t b = parusdata_todecimal(pd2);
-		stack_push(stk, new_parusdata_decimal((decimal_t)a * b));
-	}
 	else {
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
-		return 1;
+		decimal_t a = force_decimal(pd1);
+		decimal_t b = force_decimal(pd2);
+		stack_push(stk, new_parusdata_decimal(a * b));
 
 	}
 	
@@ -344,10 +318,10 @@ static int multiply(void* stk, void* lex) {
 static int divide(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
 	ParusData* pd1 = stack_pull(stk);
-	if (pd2 == NULL || pd1 == NULL) {
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
+	if (!is_number(pd1) || !is_number(pd2)) {
 		free_parusdata(pd1);
 		free_parusdata(pd2);
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
 		return 1;
 	}
 
@@ -359,26 +333,12 @@ static int divide(void* stk, void* lex) {
 	if (pd1->type == INTEGER && pd2->type == INTEGER) {
 		integer_t a = parusdata_tointeger(pd1);
 		integer_t b = parusdata_tointeger(pd2);
-		stack_push(stk, new_parusdata_decimal((decimal_t)a / (decimal_t)b));
-	}
-	else if (pd1->type == DECIMAL && pd2->type == DECIMAL) {
-		decimal_t a = parusdata_todecimal(pd1);
-		decimal_t b = parusdata_todecimal(pd2);
-		stack_push(stk, new_parusdata_decimal(a / b));
-	}
-	else if (pd1->type == DECIMAL && pd2->type == INTEGER) {
-		decimal_t a = parusdata_todecimal(pd1);
-		integer_t b = parusdata_tointeger(pd2);
-		stack_push(stk, new_parusdata_decimal(a / (decimal_t)b));
-	}
-	else if (pd1->type == INTEGER && pd2->type == DECIMAL) {
-		integer_t a = parusdata_tointeger(pd1);
-		decimal_t b = parusdata_todecimal(pd2);
-		stack_push(stk, new_parusdata_decimal((decimal_t)a / b));
+		stack_push(stk, new_parusdata_integer(a / b));
 	}
 	else {
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
-		return 1;
+		decimal_t a = force_decimal(pd1);
+		decimal_t b = force_decimal(pd2);
+		stack_push(stk, new_parusdata_decimal(a / b));
 
 	}
 	
@@ -391,10 +351,11 @@ static int divide(void* stk, void* lex) {
 static int equal(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
 	ParusData* pd1 = stack_pull(stk);
-	if (pd2 == NULL || pd1 == NULL) {
-		fprintf(stderr, "Excepted two numbers\n");
+
+	if (!is_number(pd1) || !is_number(pd2)) {
 		free_parusdata(pd1);
 		free_parusdata(pd2);
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
 		return 1;
 	}
 
@@ -403,24 +364,10 @@ static int equal(void* stk, void* lex) {
 		integer_t b = parusdata_tointeger(pd2);
 		stack_push(stk, new_parusdata_integer(a == b));
 	}
-	else if (pd1->type == DECIMAL && pd2->type == DECIMAL) {
-		decimal_t a = parusdata_todecimal(pd1);
-		decimal_t b = parusdata_todecimal(pd2);
-		stack_push(stk, new_parusdata_integer(a == b));
-	}
-	else if (pd1->type == DECIMAL && pd2->type == INTEGER) {
-		decimal_t a = parusdata_todecimal(pd1);
-		integer_t b = parusdata_tointeger(pd2);
-		stack_push(stk, new_parusdata_integer(a == (decimal_t)b));
-	}
-	else if (pd1->type == INTEGER && pd2->type == DECIMAL) {
-		integer_t a = parusdata_tointeger(pd1);
-		decimal_t b = parusdata_todecimal(pd2);
-		stack_push(stk, new_parusdata_integer((decimal_t)a == b));
-	}
 	else {
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
-		return 1;
+		decimal_t a = force_decimal(pd1);
+		decimal_t b = force_decimal(pd2);
+		stack_push(stk, new_parusdata_integer(a == b));
 
 	}
 	
@@ -432,10 +379,11 @@ static int equal(void* stk, void* lex) {
 static int less_than(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
 	ParusData* pd1 = stack_pull(stk);
-	if (pd2 == NULL || pd1 == NULL) {
-		fprintf(stderr, "Excepted two numbers\n");
+
+	if (!is_number(pd1) || !is_number(pd2)) {
 		free_parusdata(pd1);
 		free_parusdata(pd2);
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
 		return 1;
 	}
 
@@ -444,24 +392,10 @@ static int less_than(void* stk, void* lex) {
 		integer_t b = parusdata_tointeger(pd2);
 		stack_push(stk, new_parusdata_integer(a < b));
 	}
-	else if (pd1->type == DECIMAL && pd2->type == DECIMAL) {
-		decimal_t a = parusdata_todecimal(pd1);
-		decimal_t b = parusdata_todecimal(pd2);
-		stack_push(stk, new_parusdata_integer(a < b));
-	}
-	else if (pd1->type == DECIMAL && pd2->type == INTEGER) {
-		decimal_t a = parusdata_todecimal(pd1);
-		integer_t b = parusdata_tointeger(pd2);
-		stack_push(stk, new_parusdata_integer(a < (decimal_t)b));
-	}
-	else if (pd1->type == INTEGER && pd2->type == DECIMAL) {
-		integer_t a = parusdata_tointeger(pd1);
-		decimal_t b = parusdata_todecimal(pd2);
-		stack_push(stk, new_parusdata_integer((decimal_t)a < b));
-	}
 	else {
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
-		return 1;
+		decimal_t a = force_decimal(pd1);
+		decimal_t b = force_decimal(pd2);
+		stack_push(stk, new_parusdata_integer(a < b));
 
 	}
 	
@@ -473,10 +407,11 @@ static int less_than(void* stk, void* lex) {
 static int greater_than(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
 	ParusData* pd1 = stack_pull(stk);
-	if (pd2 == NULL || pd1 == NULL) {
-		fprintf(stderr, "Excepted two numbers\n");
+
+	if (!is_number(pd1) || !is_number(pd2)) {
 		free_parusdata(pd1);
 		free_parusdata(pd2);
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
 		return 1;
 	}
 
@@ -485,24 +420,10 @@ static int greater_than(void* stk, void* lex) {
 		integer_t b = parusdata_tointeger(pd2);
 		stack_push(stk, new_parusdata_integer(a > b));
 	}
-	else if (pd1->type == DECIMAL && pd2->type == DECIMAL) {
-		decimal_t a = parusdata_todecimal(pd1);
-		decimal_t b = parusdata_todecimal(pd2);
-		stack_push(stk, new_parusdata_integer(a > b));
-	}
-	else if (pd1->type == DECIMAL && pd2->type == INTEGER) {
-		decimal_t a = parusdata_todecimal(pd1);
-		integer_t b = parusdata_tointeger(pd2);
-		stack_push(stk, new_parusdata_integer(a > (decimal_t)b));
-	}
-	else if (pd1->type == INTEGER && pd2->type == DECIMAL) {
-		integer_t a = parusdata_tointeger(pd1);
-		decimal_t b = parusdata_todecimal(pd2);
-		stack_push(stk, new_parusdata_integer((decimal_t)a > b));
-	}
 	else {
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
-		return 1;
+		decimal_t a = force_decimal(pd1);
+		decimal_t b = force_decimal(pd2);
+		stack_push(stk, new_parusdata_integer(a > b));
 
 	}
 	
@@ -522,6 +443,8 @@ static int out(void* stk, void* lex) {
 		printf("%f", parusdata_todecimal(pd));
 	else if (pd->type == SYMBOL)
 		printf("%s", parusdata_getsymbol(pd));
+	else
+		printf("parusdata");
 
 	free_parusdata(pd);
 	return 0;
@@ -652,6 +575,7 @@ Lexicon* predefined_lexicon() {
 
 	// syntatic forms
 	lexicon_define(lex, "FOR", new_parusdata_primitive(&for_macro));
+
 
 	return lex;
 
