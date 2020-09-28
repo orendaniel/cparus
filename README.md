@@ -43,19 +43,25 @@ else:
 
 # Examples
 
+; Inspect the memory using ?stk and ?lex.
+
 3 2 + OUT
 
-==> 5
+; ==> 5
 
-spaces are required between parenthesis
+; spaces are required between parenthesis
 
 ( DPL * ) '^2 DEF
+
 5 ^2 OUT
 
-==> 25
+; ==> 25
 
 ''a 'b DEF
+
 3 'a DEF
+
 b ! OUT 
 
-==> 3
+; ==> 3
+
