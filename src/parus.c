@@ -463,12 +463,15 @@ void lexicon_print(Lexicon* lex) {
 // EVALUATOR
 // ----------------------------------------------------------------------------------------------------
 
+
 /*
 applies a parusdata 
 
 the function will automatically free pd if needed
 */
 static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
+
+
 	if (pd == NULL)
 		return;
 
@@ -489,6 +492,8 @@ static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 
 	else if (pd->type == COMPOUND_MACRO) 
 		apply_compound(pd, stk, lex);
+
+
 }
 
 /* 
@@ -504,6 +509,7 @@ As such the last instruction in the sequence is optimized.
 */
 static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 	static int call_depth = 0;
+
 	if (call_depth > MAXIMUM_CALL_DEPTH) {
 		fprintf(stderr, "INSUFFICIENT DATA FOR MEANINGFUL ANSWER\n");
 		exit(EXIT_FAILURE);
@@ -511,7 +517,6 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 	}
 
 	if (mcr->data.compound.size == 0) {
-		call_depth = 0;
 		free_parusdata(mcr);
 		return;
 	}
@@ -528,6 +533,7 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 			char* sym_expr = copy_string(parusdata_getsymbol(instr));
 			parus_eval(sym_expr, stk, lex);
 			free(sym_expr);
+			call_depth--;
 		}
 	}
 
@@ -577,8 +583,10 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 						if (pd == NULL)
 							return;
 
-						if (pd->type != COMPOUND_MACRO)
+						if (pd->type != COMPOUND_MACRO) {
 							apply(pd, stk, lex);
+							return; // done
+						}
 						// tail call
 						else {
 							mcr = pd;
@@ -595,6 +603,7 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 
 			if (pd == NULL)
 				return;
+
 			// if the last symbol doesn't represent a compounded macro then apply the instruction
 			if (pd->type != COMPOUND_MACRO) {
 				apply(pd, stk, lex);
@@ -609,7 +618,6 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 	}
 
 
-	call_depth = 0;
 	free_parusdata(mcr);
 }
 
