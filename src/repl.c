@@ -56,9 +56,9 @@ int parencount(char* str) {
 }
 
 void print_title() {
-	printf("CParus Copyright (C) 2020  Oren Daniel\n");
-	printf("version 0.1\n");
+	printf("CParus version 0.1\n");
 	printf("CParus is free software under the GPLv3 license\n");
+	printf("Oren Daniel 2020 Ra'anana Israel");
 	printf("Type parus -help for help\n\n");
 
 }
