@@ -517,7 +517,7 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 	}
 
 
-	tailcall:
+	recall:
 
 	if (mcr->data.compound.size == 0) {
 		free_parusdata(mcr);
@@ -567,7 +567,7 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 				if (top->type == COMPOUND_MACRO) {
 					// applying the top of the stack
 					mcr = top;
-					goto tailcall;
+					goto recall;
 				}
 				// top of the stack is symbol
 				else {
@@ -592,10 +592,10 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 							apply(pd, stk, lex);
 							return; // done
 						}
-						// tail call
+						// recall
 						else {
 							mcr = pd;
-							goto tailcall;
+							goto recall;
 						}
 					}
 				}
@@ -614,10 +614,10 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 				apply(pd, stk, lex);
 				return; // done
 			}
-			// tail call
+			// recall
 			else {
 				mcr = pd;
-				goto tailcall;
+				goto recall;
 			}
 		}
 	}
