@@ -521,7 +521,7 @@ static int read(void* stk, void* lex) {
 	char buffer[READ_BUFFER];
 	buffer[0] = '\'';
 
-	while ((c = getc(stdin)) != EOF && i < READ_BUFFER -1) {
+	while ((c = getc(stdin)) != EOF && c != ';' && i < READ_BUFFER -1) {
 		if (isspace(c))
 			break;
 		else if (c != '(' && c != ')' && c != '\'' && c != '!') {
