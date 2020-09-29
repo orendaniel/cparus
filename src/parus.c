@@ -411,6 +411,7 @@ void lexicon_delete(Lexicon* lex, char* name) {
 			index = i;
 
 			free_parusdata(lex->entries[index].value);
+			free(lex->entries[index].name);
 
 			for (int i = index; i < lex->size; i++)
 				lex->entries[i] = lex->entries[i +1];
