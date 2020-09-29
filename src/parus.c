@@ -516,12 +516,14 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 		return;
 	}
 
+
+	tailcall:
+
 	if (mcr->data.compound.size == 0) {
 		free_parusdata(mcr);
 		return;
 	}
 
-	tailcall:
 	for (int i = 0; i < mcr->data.compound.size -1; i++) {
 		ParusData* instr = mcr->data.compound.instructions[i];
 
