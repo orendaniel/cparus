@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "parus_predefined.h"
 #include <time.h>
+#include <math.h>
 
 #define READ_BUFFER 128
 
@@ -391,6 +392,26 @@ static int divide(void* stk, void* lex) {
 		stack_push(stk, new_parusdata_decimal(a / b));
 
 	}
+	
+	free_parusdata(pd1);
+	free_parusdata(pd2);
+	return 0;
+}
+
+static int exp(void* stk, void* lex) {
+	ParusData* pd2 = stack_pull(stk);
+	ParusData* pd1 = stack_pull(stk);
+
+	if (!is_number(pd1) || !is_number(pd2)) {
+		free_parusdata(pd1);
+		free_parusdata(pd2);
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
+		return 1;
+	}
+
+	decimal_t a = force_decimal(pd1);
+	decimal_t b = force_decimal(pd2);
+	stack_push(stk, new_parusdata_decimal(pow(a, b)));
 	
 	free_parusdata(pd1);
 	free_parusdata(pd2);
