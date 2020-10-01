@@ -514,6 +514,12 @@ static int out(void* stk, void* lex) {
 
 }
 
+static int outln(void* stk, void* lex) {
+	int ret = out(stk, lex);
+	printf("\n");
+	return ret;
+}
+
 static int read(void* stk, void* lex) {
 	int c;
 	int i = 1;
@@ -656,6 +662,7 @@ Lexicon* predefined_lexicon() {
 
 	// I/O
 	lexicon_define(lex, "OUT", new_parusdata_primitive(&out));
+	lexicon_define(lex, "OUTLN", new_parusdata_primitive(&outln));
 	lexicon_define(lex, "READ", new_parusdata_primitive(&read));
 	lexicon_define(lex, "PUTC", new_parusdata_primitive(&putcharacter));
 
