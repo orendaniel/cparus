@@ -398,7 +398,7 @@ static int divide(void* stk, void* lex) {
 	return 0;
 }
 
-static int exp(void* stk, void* lex) {
+static int powerof(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
 	ParusData* pd1 = stack_pull(stk);
 
@@ -417,7 +417,6 @@ static int exp(void* stk, void* lex) {
 	free_parusdata(pd2);
 	return 0;
 }
-
 
 static int equal(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
@@ -676,6 +675,7 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "-", new_parusdata_primitive(&subtract));
 	lexicon_define(lex, "*", new_parusdata_primitive(&multiply));
 	lexicon_define(lex, "/", new_parusdata_primitive(&divide));
+	lexicon_define(lex, "^", new_parusdata_primitive(&powerof));
 	lexicon_define(lex, "=", new_parusdata_primitive(&equal));
 	lexicon_define(lex, "<", new_parusdata_primitive(&less_than));
 	lexicon_define(lex, ">", new_parusdata_primitive(&greater_than));
