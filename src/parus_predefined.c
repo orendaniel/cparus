@@ -121,9 +121,9 @@ static int if_func(void* stk, void* lex) {
 static int quote(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
 
-	if (pd->type != SYMBOL)
+	if (pd->type == INTEGER || pd->type == DECIMAL)
 		stack_push(stk, pd);
-	else {
+	else if (pd->type == SYMBOL) {
 		char* 	sym 	= parusdata_getsymbol(pd);
 		int 	len 	= strlen(sym) +2; // space for additional quote and '\0'
 		char* 	new_sym = malloc(len * sizeof(char));
@@ -137,6 +137,11 @@ static int quote(void* stk, void* lex) {
 		free_parusdata(pd);
 		stack_push(stk, new_parusdata_symbol(new_sym));
 
+	}
+	else {
+		fprintf(stderr, "UNQUOTABLE TYPE\n");
+		free_parusdata(pd);
+		return 1;
 	}
 
 	return 0;
@@ -517,9 +522,12 @@ static int round_value(void* stk, void* lex) {
 
 static int out(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
-	if (pd == NULL) 
+	if (pd == NULL) {
+		free_parusdata(pd);
+		fprintf(stderr, "CANNOT PRINT AN EMPTY ITEM\n");
 		return 1;
 	
+	}
 	if (pd->type == INTEGER)
 		printf("%ld", parusdata_tointeger(pd));
 	else if (pd->type == DECIMAL)
@@ -536,7 +544,8 @@ static int out(void* stk, void* lex) {
 
 static int outln(void* stk, void* lex) {
 	int ret = out(stk, lex);
-	printf("\n");
+	if (ret == 0)
+		printf("\n");
 	return ret;
 }
 
