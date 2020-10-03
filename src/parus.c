@@ -201,7 +201,10 @@ ParusData* new_parusdata_primitive(primitve_t p) {
 	return pd;
 }
 
-/* make a new parusdata as compounded macro */
+/*
+make a new parusdata as compounded macro
+A compound macro is represented by a list of ParusData that are evaluated sequentially
+*/
 ParusData* new_parusdata_compound(char* expr) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
@@ -209,8 +212,9 @@ ParusData* new_parusdata_compound(char* expr) {
 		pd->data.compound.max 			= COMPOUND_GROWTH;
 		pd->data.compound.size 			= 0;
 		pd->type = COMPOUND_MACRO;
-
-		static char* token; // variables to store the car and cdr of a expr
+		
+		// variables to store the "car" and "cdr" of the string expr
+		static char* token; 
 		static char* rest;
 		rest = expr;
 
@@ -247,7 +251,7 @@ ParusData* new_parusdata_compound(char* expr) {
 		}
 		
 		if (!terminated) {
-			fprintf(stderr, "UN-TERMINATED MACRO\n");
+			fprintf(stderr, "UN-TERMINATED MACRO\n"); // print error only once
 			unterminated:
 			free_parusdata(pd);
 			return NULL;

@@ -162,7 +162,7 @@ char* readline_without_comment(const char* s) {
 			discard = 1;
 
 		if (discard)
-			input[i] = ' ';
+			input[i] = ' '; // removes comments from input
 		i++;
 	}
 	return input;
