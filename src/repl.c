@@ -149,18 +149,22 @@ void do_line(char* input, Stack* stk, Lexicon* lex) {
 	free(buffer);
 }
 
-char* readline_without_comment(const char* cursor) {
-	char* 	input 	= readline(cursor);
+char* readline_without_comment(const char* s) {
+	char* 	input 	= readline(s);
 	char 	discard = 0;
 
-	for (int i = 0; i < strlen(input); i++) {
+	if (input == NULL)
+		return NULL;
+
+	int i = 0;
+	while (input[i] != '\0') {
 		if (input[i] == ';') 
 			discard = 1;
 
 		if (discard)
 			input[i] = ' ';
+		i++;
 	}
-
 	return input;
 }
 
