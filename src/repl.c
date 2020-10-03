@@ -127,8 +127,6 @@ void do_line(char* input, Stack* stk, Lexicon* lex) {
 	int c;
 
 	while ((c = input[i++]) != '\0') {
-		if (c == ';') // comment escape line
-			break;
 		if (isspace(c) && parencount(buffer) <= 0) { // if balanced expression
 			buffer[j] = '\0';
 
@@ -149,6 +147,21 @@ void do_line(char* input, Stack* stk, Lexicon* lex) {
 	parus_eval(buffer, stk, lex);
 	
 	free(buffer);
+}
+
+char* readline_without_comment(const char* cursor) {
+	char* 	input 	= readline(cursor);
+	char 	discard = 0;
+
+	for (int i = 0; i < strlen(input); i++) {
+		if (input[i] == ';') 
+			discard = 1;
+
+		if (discard)
+			input[i] = ' ';
+	}
+
+	return input;
 }
 
 int main(int argc, char** argv) {
@@ -193,13 +206,13 @@ int main(int argc, char** argv) {
 		print_title();
 	while (!norepl) {
 		
-		char* input = readline("CParus> ");
+		char* input = readline_without_comment("CParus> ");
 		add_history(input);
 		if (!input)
 			break;
 
 		while (parencount(input) > 0) {
-			char* addition = readline("...");
+			char* addition = readline_without_comment("...");
 			add_history(addition);
 			if (!addition)
 				goto break_main_loop;
