@@ -93,6 +93,13 @@ static char is_symbol(char* s) {
 	return valid;
 }
 
+static int quote_count(char* s) {
+	int i = 0;
+	while (s[i] == '\'' && s[i] != '\0')
+		i++;
+	return i;
+}
+
 
 /* inserts an instruction to a mcr */
 static void insert_instruction(ParusData* mcr, ParusData* instr) {
@@ -671,12 +678,13 @@ int parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 
 	/* quoted forms */
 	else if (is_quoted(expr)) {
+		int offset = quote_count(expr);
 
-		if (is_integer(expr +1))
-			stack_push(stk, new_parusdata_integer(atoi(expr +1)));
+		if (is_integer(expr + offset))
+			stack_push(stk, new_parusdata_integer(atoi(expr + offset)));
 
-		else if (is_decimal(expr +1))
-			stack_push(stk, new_parusdata_decimal(atof(expr +1)));
+		else if (is_decimal(expr + offset))
+			stack_push(stk, new_parusdata_decimal(atof(expr + offset)));
 
 		else if (is_symbol(expr +1))
 			stack_push(stk, new_parusdata_symbol(copy_string(expr +1)));
