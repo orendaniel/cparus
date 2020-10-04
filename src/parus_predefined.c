@@ -616,35 +616,59 @@ static int for_macro(void* stk, void* lex) {
 
 	ParusData* fn 	= stack_pull(stk);
 	ParusData* inc 	= stack_pull(stk);
+	ParusData* cmp 	= stack_pull(stk);
 	ParusData* max 	= stack_pull(stk);
 	ParusData* min 	= stack_pull(stk);
 	ParusData* sym 	= stack_pull(stk);
 
 	if (inc->type != INTEGER ||
 			min->type != INTEGER || max->type != INTEGER ||
-			sym->type != SYMBOL) {
+			sym->type != SYMBOL || 
+			!(cmp->type == SYMBOL || cmp->type == COMPOUND_MACRO)) {
 		
 		fprintf(stderr, "WRONG TYPES OF PARAMETERS GIVEN\n");
-		fprintf(stderr, "SYMBOL INC MIN MAX FN\n");
+		fprintf(stderr, "SYMBOL MIN MAX CMP INC FN\n");
 		free_parusdata(fn);
 		free_parusdata(inc);
+		free_parusdata(cmp);
 		free_parusdata(min);
 		free_parusdata(max);
 		free_parusdata(sym);
 		return 1;
 	}
+	
+	int i = parusdata_tointeger(min);
 
-	for (int i = parusdata_tointeger(min); i < parusdata_tointeger(max); i += parusdata_tointeger(inc)) {
-		lexicon_define(lex, parusdata_getsymbol(sym), new_parusdata_integer(i));
-
-		stack_push(stk, parusdata_copy(fn));
+	while (1) {
+		stack_push(stk, new_parusdata_integer(i));
+		stack_push(stk, parusdata_copy(max));
+		stack_push(stk, parusdata_copy(cmp));
 		parus_literal_eval("!", stk, lex);
 
-		lexicon_delete(lex, parusdata_getsymbol(sym));
+
+		ParusData* 	cond 		= stack_pull(stk);
+		int 		cond_int 	= parusdata_tointeger(cond);
+
+		free_parusdata(cond);
+
+
+		if (cond_int != 0) {
+			lexicon_define(lex, parusdata_getsymbol(sym), new_parusdata_integer(i));
+
+			stack_push(stk, parusdata_copy(fn));
+			parus_literal_eval("!", stk, lex);
+
+			lexicon_delete(lex, parusdata_getsymbol(sym));
+			i += parusdata_tointeger(inc);		
+		}
+		else
+			break;
+		
 	}
 
 	free_parusdata(fn);
 	free_parusdata(inc);
+	free_parusdata(cmp);
 	free_parusdata(min);
 	free_parusdata(max);
 	free_parusdata(sym);
