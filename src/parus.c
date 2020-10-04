@@ -299,7 +299,7 @@ void stack_push(Stack* stk, ParusData* pd) {
 	if (stk->size != stk->max - 1) 
 		stk->items[stk->size++] = pd;
 	else {
-		stk->items = realloc(stk->items, (stk->max + STACK_GROWTH) * sizeof(ParusData));
+		stk->items = realloc(stk->items, (stk->max + STACK_GROWTH) * sizeof(ParusData*));
 		if (stk->items != 0) {
 			stk->max += STACK_GROWTH;
 			stk->items[stk->size++] = pd;
@@ -397,9 +397,9 @@ void lexicon_define(Lexicon* lex, char* name, ParusData* pd) {
 	if (lex->size != lex->max - 1)
 		lex->entries[lex->size++] = ent;
 	else {
-		lex->entries = realloc(lex->entries, (lex->max + STACK_GROWTH) * sizeof(ParusData));
+		lex->entries = realloc(lex->entries, (lex->max + LEXICON_GROWTH) * sizeof(struct entry));
 		if (lex->entries != 0) {
-			lex->max += STACK_GROWTH;
+			lex->max += LEXICON_GROWTH;
 			lex->entries[lex->size++] = ent;
 		}
 		else
