@@ -249,9 +249,9 @@ static int is_top_decimal(void* stk, void* lex) {
 
 }
 
-static int is_top_compound(void* stk, void* lex) {
+static int is_top_macro(void* stk, void* lex) {
 	ParusData* pd = stack_get_at(stk, 0);
-	if (pd->type == COMPOUND_MACRO)
+	if (pd->type == COMPOUND_MACRO || pd->type == PRIMITIVE_MACRO)
 		stack_push(stk, new_parusdata_integer(1));
 	else
 		stack_push(stk, new_parusdata_integer(0));
@@ -675,7 +675,7 @@ Lexicon* predefined_lexicon() {
 	// reflection
 	lexicon_define(lex, "INTEGER?", new_parusdata_primitive(&is_top_integer));
 	lexicon_define(lex, "DECIMAL?", new_parusdata_primitive(&is_top_decimal));
-	lexicon_define(lex, "COMPOUND?", new_parusdata_primitive(&is_top_compound));
+	lexicon_define(lex, "MACRO?", new_parusdata_primitive(&is_top_macro));
 	lexicon_define(lex, "SYMBOL?", new_parusdata_primitive(&is_top_symbol));
 	lexicon_define(lex, "NONE?", new_parusdata_primitive(&is_top_null));
 
