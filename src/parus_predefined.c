@@ -269,7 +269,7 @@ static int is_top_decimal(void* stk, void* lex) {
 
 static int is_top_macro(void* stk, void* lex) {
 	ParusData* pd = stack_get_at(stk, 0);
-	if (pd != NULL && pd->type == COMPOUND_MACRO || pd->type == PRIMITIVE_MACRO)
+	if (pd != NULL && pd->type == USER_MACRO || pd->type == PRIMITIVE_MACRO)
 		stack_push(stk, new_parusdata_integer(1));
 	else
 		stack_push(stk, new_parusdata_integer(0));
@@ -649,7 +649,7 @@ static int for_macro(void* stk, void* lex) {
 		||inc->type != INTEGER ||
 			min->type != INTEGER || max->type != INTEGER ||
 			sym->type != SYMBOL || 
-			!(cmp->type == SYMBOL || cmp->type == COMPOUND_MACRO)) {
+			!(cmp->type == SYMBOL || cmp->type == USER_MACRO)) {
 		
 		fprintf(stderr, "WRONG TYPES OF PARAMETERS GIVEN\n");
 		fprintf(stderr, "SYMBOL MIN MAX CMP INC FN\n");

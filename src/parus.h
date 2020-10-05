@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define STACK_GROWTH 	50
 #define LEXICON_GROWTH 	50
 
-#define COMPOUND_GROWTH 10
+#define USER_MACRO_INSTR_GROWTH 10
 
 #define MAXIMUM_CALL_DEPTH 25000
 
@@ -49,14 +49,14 @@ typedef struct {
 			void** 	instructions; //array of ParusData*
 			size_t 	max;
 			size_t 	size;
-		} compound;
+		} usermacro;
 	} data;
 	enum {
 		INTEGER,
 		DECIMAL,
 		SYMBOL,
 		PRIMITIVE_MACRO,
-		COMPOUND_MACRO,
+		USER_MACRO,
 		NONE // marks the instance as freed
 	} type;
 } ParusData;
@@ -90,7 +90,7 @@ decimal_t 		parusdata_todecimal(ParusData* pd);
 ParusData* 		new_parusdata_symbol(char* s);
 char* 			parusdata_getsymbol(ParusData* pd);
 ParusData* 		new_parusdata_primitive(primitve_t p);
-ParusData* 		new_parusdata_compound(char* expr);
+ParusData* 		new_parusdata_usermacro(char* expr);
 void 			free_parusdata(ParusData* pd);
 
 Stack* 		new_stack();

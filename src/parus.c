@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "parus.h"
 
 
-static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex);
+static void apply_usermacro(ParusData* mcr, Stack* stk, Lexicon* lex);
 static void apply(ParusData* mcr, Stack* stk, Lexicon* lex);
 
 // HELPERS
@@ -48,7 +48,7 @@ static char is_comment(char* s) {
 	return s[0] == ';';
 }
 
-static char is_compound(char* s) {
+static char is_usermacro(char* s) {
 	return s[0] == '(' && strcount(s) == 1;
 }
 
@@ -103,21 +103,21 @@ static int quote_count(char* s) {
 
 /* inserts an instruction to a mcr */
 static void insert_instruction(ParusData* mcr, ParusData* instr) {
-	if (mcr->type != COMPOUND_MACRO) {
+	if (mcr->type != USER_MACRO) {
 		fprintf(stderr, "CANNOT INSERT INSTRUCTION FOR A NON MACRO\n");
 		return;
 	}
 	
-	if (mcr->data.compound.size < mcr->data.compound.max -1)
-			mcr->data.compound.instructions[mcr->data.compound.size++] = instr;
+	if (mcr->data.usermacro.size < mcr->data.usermacro.max -1)
+			mcr->data.usermacro.instructions[mcr->data.usermacro.size++] = instr;
 	
 	else {
-		mcr->data.compound.instructions = realloc(mcr->data.compound.instructions,
-					(mcr->data.compound.max + COMPOUND_GROWTH) * sizeof(ParusData));
+		mcr->data.usermacro.instructions = realloc(mcr->data.usermacro.instructions,
+					(mcr->data.usermacro.max + USER_MACRO_INSTR_GROWTH) * sizeof(ParusData));
 
-		if (mcr->data.compound.instructions != 0) {
-			mcr->data.compound.max += COMPOUND_GROWTH;
-			mcr->data.compound.instructions[mcr->data.compound.size++] = instr;
+		if (mcr->data.usermacro.instructions != 0) {
+			mcr->data.usermacro.max += USER_MACRO_INSTR_GROWTH;
+			mcr->data.usermacro.instructions[mcr->data.usermacro.size++] = instr;
 		}
 	}
 }
@@ -138,15 +138,15 @@ ParusData* parusdata_copy(ParusData* original) {
 	else if (original->type == PRIMITIVE_MACRO)
 		return new_parusdata_primitive(original->data.primitve);
 
-	else if (original->type == COMPOUND_MACRO) {
+	else if (original->type == USER_MACRO) {
 		ParusData* mcr 	= calloc(1, sizeof(ParusData));
-		mcr->type 		= COMPOUND_MACRO;
+		mcr->type 		= USER_MACRO;
 
-		mcr->data.compound.size 		= original->data.compound.size;
-		mcr->data.compound.instructions = calloc(mcr->data.compound.size, sizeof(ParusData));
+		mcr->data.usermacro.size 		= original->data.usermacro.size;
+		mcr->data.usermacro.instructions = calloc(mcr->data.usermacro.size, sizeof(ParusData));
 
-		for (int i = 0; i < mcr->data.compound.size; i++)
-			mcr->data.compound.instructions[i] = parusdata_copy(original->data.compound.instructions[i]);
+		for (int i = 0; i < mcr->data.usermacro.size; i++)
+			mcr->data.usermacro.instructions[i] = parusdata_copy(original->data.usermacro.instructions[i]);
 
 		return mcr;
 	}
@@ -209,16 +209,16 @@ ParusData* new_parusdata_primitive(primitve_t p) {
 }
 
 /*
-make a new parusdata as compounded macro
-A compound macro is represented by a list of ParusData that are evaluated sequentially
+make a new parusdata as usermacro
+A usermacro is represented by a list of ParusData that are evaluated sequentially
 */
-ParusData* new_parusdata_compound(char* expr) {
+ParusData* new_parusdata_usermacro(char* expr) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
-		pd->data.compound.instructions 	= calloc(COMPOUND_GROWTH, sizeof(ParusData));
-		pd->data.compound.max 			= COMPOUND_GROWTH;
-		pd->data.compound.size 			= 0;
-		pd->type = COMPOUND_MACRO;
+		pd->data.usermacro.instructions 	= calloc(USER_MACRO_INSTR_GROWTH, sizeof(ParusData));
+		pd->data.usermacro.max 				= USER_MACRO_INSTR_GROWTH;
+		pd->data.usermacro.size 			= 0;
+		pd->type = USER_MACRO;
 		
 		// variables to store the "car" and "cdr" of the string expr
 		static char* token; 
@@ -229,8 +229,8 @@ ParusData* new_parusdata_compound(char* expr) {
 
 		while ((token = strtok_r(rest, " ", &rest))) {
 
-			if (is_compound(token)) {
-				ParusData* submcr = new_parusdata_compound(rest);
+			if (is_usermacro(token)) {
+				ParusData* submcr = new_parusdata_usermacro(rest);
 
 				if (submcr == NULL) {
 					free_parusdata(submcr);
@@ -273,11 +273,11 @@ void free_parusdata(ParusData* pd) {
 	if (pd != NULL && pd->type != NONE) {
 		if (pd->type == SYMBOL)
 			free(pd->data.symbol);
-		else if (pd->type == COMPOUND_MACRO) {
-			for (int i = 0; i < pd->data.compound.size; i++) 
-				free_parusdata(pd->data.compound.instructions[i]);
+		else if (pd->type == USER_MACRO) {
+			for (int i = 0; i < pd->data.usermacro.size; i++) 
+				free_parusdata(pd->data.usermacro.instructions[i]);
 
-			free(pd->data.compound.instructions);
+			free(pd->data.usermacro.instructions);
 		}	
 
 		free(pd);
@@ -502,14 +502,14 @@ static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		free_parusdata(pd);
 	}
 
-	else if (pd->type == COMPOUND_MACRO) 
-		apply_compound(pd, stk, lex);
+	else if (pd->type == USER_MACRO) 
+		apply_usermacro(pd, stk, lex);
 
 
 }
 
 /* 
-handles compound macros
+handles usermacro
 
 the function will automatically free mcr if needed
 
@@ -519,7 +519,7 @@ of macro can run in the same call of the original macro.
 As such the last instruction in the sequence is optimized.
 
 */
-static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
+static void apply_usermacro(ParusData* mcr, Stack* stk, Lexicon* lex) {
 	static int call_depth = 0; // stores the call history
 
 	if (call_depth > MAXIMUM_CALL_DEPTH) {
@@ -531,15 +531,15 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 
 	recall:
 
-	if (mcr->data.compound.size == 0) {
+	if (mcr->data.usermacro.size == 0) {
 		free_parusdata(mcr);
 		return;
 	}
 
-	for (int i = 0; i < mcr->data.compound.size -1; i++) {
-		ParusData* instr = mcr->data.compound.instructions[i];
+	for (int i = 0; i < mcr->data.usermacro.size -1; i++) {
+		ParusData* instr = mcr->data.usermacro.instructions[i];
 
-		if (instr->type == INTEGER || instr->type == DECIMAL || instr->type == COMPOUND_MACRO)
+		if (instr->type == INTEGER || instr->type == DECIMAL || instr->type == USER_MACRO)
 			stack_push(stk, parusdata_copy(instr));
 
 		else {
@@ -555,9 +555,9 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 	}
 
 	
-	ParusData* last = mcr->data.compound.instructions[mcr->data.compound.size -1];
+	ParusData* last = mcr->data.usermacro.instructions[mcr->data.usermacro.size -1];
 
-	if (last->type == INTEGER || last->type == DECIMAL || last->type == COMPOUND_MACRO)
+	if (last->type == INTEGER || last->type == DECIMAL || last->type == USER_MACRO)
 		stack_push(stk, parusdata_copy(last)); // last is self evaluating
 
 	else {
@@ -570,13 +570,13 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 			ParusData* top = stack_pull(stk);
 			
 			// if top of the stack is neither a symbol or macro
-			if (top->type != COMPOUND_MACRO && top->type != SYMBOL) {
+			if (top->type != USER_MACRO && top->type != SYMBOL) {
 				apply(top, stk, lex);
 				return; // done
 			}
 
 			else {
-				if (top->type == COMPOUND_MACRO) {
+				if (top->type == USER_MACRO) {
 					// applying the top of the stack
 					mcr = top;
 					goto recall;
@@ -600,7 +600,7 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 						if (pd == NULL)
 							return;
 
-						if (pd->type != COMPOUND_MACRO) {
+						if (pd->type != USER_MACRO) {
 							apply(pd, stk, lex);
 							return; // done
 						}
@@ -621,8 +621,8 @@ static void apply_compound(ParusData* mcr, Stack* stk, Lexicon* lex) {
 			if (pd == NULL)
 				return;
 
-			// if the last symbol doesn't represent a compounded macro then apply the instruction
-			if (pd->type != COMPOUND_MACRO) {
+			// if the last symbol doesn't represent a usermacro then apply the instruction
+			if (pd->type != USER_MACRO) {
 				apply(pd, stk, lex);
 				return; // done
 			}
@@ -656,8 +656,8 @@ int parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 		return 0;
 
 	/* self evaluating forms */
-	if (is_compound(expr)) {
-		ParusData* mcr = new_parusdata_compound(expr + 2);
+	if (is_usermacro(expr)) {
+		ParusData* mcr = new_parusdata_usermacro(expr + 2);
 		if (mcr == NULL)
 			return 0;
 		stack_push(stk, mcr);
