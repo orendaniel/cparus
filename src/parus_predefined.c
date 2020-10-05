@@ -233,7 +233,7 @@ static int is_top_integer(void* stk, void* lex) {
 	else
 		stack_push(stk, new_parusdata_integer(0));
 
-	free(pd);
+	free_parusdata(pd);
 	return 0;
 }
 
@@ -244,7 +244,7 @@ static int is_top_decimal(void* stk, void* lex) {
 	else
 		stack_push(stk, new_parusdata_integer(0));
 
-	free(pd);
+	free_parusdata(pd);
 	return 0;
 
 }
@@ -256,7 +256,7 @@ static int is_top_macro(void* stk, void* lex) {
 	else
 		stack_push(stk, new_parusdata_integer(0));
 
-	free(pd);
+	free_parusdata(pd);
 	return 0;
 
 
@@ -269,7 +269,7 @@ static int is_top_symbol(void* stk, void* lex) {
 	else
 		stack_push(stk, new_parusdata_integer(0));
 
-	free(pd);
+	free_parusdata(pd);
 	return 0;
 
 }
@@ -281,7 +281,7 @@ static int is_top_null(void* stk, void* lex) {
 	else
 		stack_push(stk, new_parusdata_integer(0));
 
-	free(pd);
+	free_parusdata(pd);
 	return 0;
 
 }
