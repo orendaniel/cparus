@@ -104,7 +104,7 @@ void do_file(FILE* f, Stack* stk, Lexicon* lex) {
 				return;
 		}
 		else  {
-			if (c != '\n' && c != '\t' && c != '\r' && c != '\v' && c != '\f')
+			if (!isspace(c))
 				buffer[i] = c;
 			else
 				buffer[i] = ' ';

@@ -630,8 +630,8 @@ static void apply_usermacro(ParusData* mcr, Stack* stk, Lexicon* lex) {
 	
 	else if (last->type == QUOTED) // apply quoted
 		apply(parusdata_copy(last), stk, lex);
-
-	/* 
+		
+	/*
 		This section handles the following cases
 		if last instruction is an imperative form then
 			if top is a symbol and is binded to macro, re-call
@@ -643,6 +643,7 @@ static void apply_usermacro(ParusData* mcr, Stack* stk, Lexicon* lex) {
 
 	else {
 		char* name = copy_string(parusdata_getsymbol(last));
+		free_parusdata(mcr);
 		if (is_imperative(name)) { // last instruction is an imperative form
 			// no longer needed
 			free(name);
@@ -655,7 +656,6 @@ static void apply_usermacro(ParusData* mcr, Stack* stk, Lexicon* lex) {
 				free_parusdata(top);
 				// re-call macro
 				if (pd->type == USER_MACRO) {
-					free_parusdata(mcr);
 					mcr = pd;
 					goto recall;
 
@@ -669,7 +669,6 @@ static void apply_usermacro(ParusData* mcr, Stack* stk, Lexicon* lex) {
 
 			else if (top->type == USER_MACRO) {
 				// re-call macro
-				free_parusdata(mcr);
 				mcr = top;
 				goto recall;
 			}
@@ -690,7 +689,6 @@ static void apply_usermacro(ParusData* mcr, Stack* stk, Lexicon* lex) {
 			}
 			else {
 				// re-call macro
-				free_parusdata(mcr);
 				mcr = pd;
 				goto recall;
 			}
