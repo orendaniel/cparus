@@ -85,7 +85,7 @@ static int if_func(void* stk, void* lex) {
 	ParusData* do_true 	= stack_pull(stk);
 	ParusData* cond		= stack_pull(stk);
 
-	if (cond == NULL || do_true == NULL || do_false) {
+	if (cond == NULL || do_true == NULL || do_false == NULL) {
 		fprintf(stderr, "CAN NOT PREFORM IF OPERATION\n");
 		free_parusdata(cond);
 		free_parusdata(do_true);
@@ -558,16 +558,16 @@ static int read(void* stk, void* lex) {
 	buffer[0] = '\'';
 
 	while ((c = getc(stdin)) != EOF && c != ';' && i < READ_BUFFER -1) {
-		if (isspace(c))
+		if (isspace(c)) {
+			buffer[i] = '\0';
 			break;
+		}
 		else if (c != '(' && c != ')' && c != '\'' && c != '!') {
 			buffer[i] = (char)c;
 			i++;
 		}
 	}
 
-	if (strcmp(buffer, "'") != 0)
-		parus_literal_eval(buffer, stk, lex);
 
 	return 0;
 }
