@@ -56,13 +56,7 @@ static int define(void* stk, void* lex) {
 	ParusData* sym = stack_pull(stk);
 	ParusData* val = stack_pull(stk);
 
-	if (sym == NULL || val == NULL) {
-		free_parusdata(sym);
-		free_parusdata(val);
-		fprintf(stderr, "CANNOT DEFINE\n");
-		return 1;
-	}
-	if (sym->type != SYMBOL) {
+	if (sym == NULL || val == NULL || sym->type != SYMBOL) {
 		free_parusdata(sym);
 		free_parusdata(val);
 		fprintf(stderr, "CAN ONLY BIND TO SYMBOLS\n");
@@ -76,12 +70,7 @@ static int define(void* stk, void* lex) {
 
 static int delete(void* stk, void* lex) {
 	ParusData* sym = stack_pull(stk);
-	if (sym == NULL) {
-		free_parusdata(sym);
-		fprintf(stderr, "CANNOT DELETE\n");
-		return 1;
-	}
-	if (sym->type != SYMBOL) {
+	if (sym == NULL || sym->type != SYMBOL) {
 		free_parusdata(sym);
 		fprintf(stderr, "CAN ONLY DELETE BINDED SYMBOLS\n");
 		return 1;
@@ -94,24 +83,32 @@ static int delete(void* stk, void* lex) {
 static int if_func(void* stk, void* lex) {
 	ParusData* do_false	= stack_pull(stk);
 	ParusData* do_true 	= stack_pull(stk);
-	ParusData* con 		= stack_pull(stk);
+	ParusData* cond		= stack_pull(stk);
+
+	if (cond == NULL || do_true == NULL || do_false) {
+		fprintf(stderr, "CAN NOT PREFORM IF OPERATION\n");
+		free_parusdata(cond);
+		free_parusdata(do_true);
+		free_parusdata(do_false);
+		return 1;
+	}
 
 	char act = 0;
 
-	if (con->type == INTEGER && parusdata_tointeger(con) != 0)
+	if (cond->type == INTEGER && parusdata_tointeger(cond) != 0)
 		act = 1;
-	else if (con->type == DECIMAL && parusdata_todecimal(con) != 0)
+	else if (cond->type == DECIMAL && parusdata_todecimal(cond) != 0)
 		act = 1;
 
 	if (act) {
 		stack_push(stk, do_true);
-		free_parusdata(con);
+		free_parusdata(cond);
 		free_parusdata(do_false);
 		return 0;
 	}
 	else {
 		stack_push(stk, do_false);
-		free_parusdata(con);
+		free_parusdata(cond);
 		free_parusdata(do_true);
 		return 0;
 
@@ -120,6 +117,11 @@ static int if_func(void* stk, void* lex) {
 
 static int quote(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
+
+	if (pd == NULL) {
+		fprintf(stderr, "CAN NOT PREFORM QUOTE OPERATION\n");
+		return 1;
+	}
 
 	if (pd->type == INTEGER || pd->type == DECIMAL)
 		stack_push(stk, pd);
@@ -150,7 +152,7 @@ static int quote(void* stk, void* lex) {
 static int fetch(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
 
-	if (pd->type != INTEGER) {
+	if (pd == NULL || pd->type != INTEGER) {
 		fprintf(stderr, "INDEX MUST BE AN INTEGER\n");
 		free_parusdata(pd);
 		return 1;
@@ -165,6 +167,7 @@ static int fetch(void* stk, void* lex) {
 	}
 	else {
 		fprintf(stderr, "INDEX OUT OF RANGE\n");
+		free_parusdata(pd);
 		return 1;
 	}
 }
@@ -172,7 +175,7 @@ static int fetch(void* stk, void* lex) {
 static int fetch_copy(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
 
-	if (pd->type != INTEGER) {
+	if (pd == NULL || pd->type != INTEGER) {
 		fprintf(stderr, "INDEX MUST BE AN INTEGER\n");
 		free_parusdata(pd);
 		return 1;
@@ -186,6 +189,7 @@ static int fetch_copy(void* stk, void* lex) {
 	}
 	else {
 		fprintf(stderr, "INDEX OUT OF RANGE\n");
+		free_parusdata(pd);
 		return 1;
 	}
 }
@@ -199,6 +203,12 @@ static int length(void* stk, void* lex) {
 static int find(void* stk, void* lex) {
 	Stack* 		pstk 	= (Stack*)stk;
 	ParusData* 	pd 		= stack_pull(stk);
+
+	if (pd == NULL) {
+		fprintf(stderr, "ATTEMPT TO COMPARE NULLITY\n");
+		return 1;
+		
+	}
 
 	int index = -1;
 
@@ -219,6 +229,14 @@ static int eqv(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
 	ParusData* pd1 = stack_pull(stk);
 
+	if (pd1 == NULL || pd2 == NULL) {
+		free_parusdata(pd1);
+		free_parusdata(pd2);
+		fprintf(stderr, "ATTEMPT TO COMPARE NULLITY\n");
+		return 1;
+		
+	}
+
 	stack_push(stk, new_parusdata_integer(equivalent(pd1, pd2)));
 	
 	free_parusdata(pd1);
@@ -228,7 +246,7 @@ static int eqv(void* stk, void* lex) {
 
 static int is_top_integer(void* stk, void* lex) {
 	ParusData* pd = stack_get_at(stk, 0);
-	if (pd->type == INTEGER)
+	if (pd != NULL && pd->type == INTEGER)
 		stack_push(stk, new_parusdata_integer(1));
 	else
 		stack_push(stk, new_parusdata_integer(0));
@@ -239,7 +257,7 @@ static int is_top_integer(void* stk, void* lex) {
 
 static int is_top_decimal(void* stk, void* lex) {
 	ParusData* pd = stack_get_at(stk, 0);
-	if (pd->type == DECIMAL)
+	if (pd != NULL && pd->type == DECIMAL)
 		stack_push(stk, new_parusdata_integer(1));
 	else
 		stack_push(stk, new_parusdata_integer(0));
@@ -251,7 +269,7 @@ static int is_top_decimal(void* stk, void* lex) {
 
 static int is_top_macro(void* stk, void* lex) {
 	ParusData* pd = stack_get_at(stk, 0);
-	if (pd->type == COMPOUND_MACRO || pd->type == PRIMITIVE_MACRO)
+	if (pd != NULL && pd->type == COMPOUND_MACRO || pd->type == PRIMITIVE_MACRO)
 		stack_push(stk, new_parusdata_integer(1));
 	else
 		stack_push(stk, new_parusdata_integer(0));
@@ -264,7 +282,7 @@ static int is_top_macro(void* stk, void* lex) {
 
 static int is_top_symbol(void* stk, void* lex) {
 	ParusData* pd = stack_get_at(stk, 0);
-	if (pd->type == SYMBOL)
+	if (pd != NULL && pd->type == SYMBOL)
 		stack_push(stk, new_parusdata_integer(1));
 	else
 		stack_push(stk, new_parusdata_integer(0));
@@ -524,7 +542,7 @@ static int out(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
 	if (pd == NULL) {
 		free_parusdata(pd);
-		fprintf(stderr, "CANNOT PRINT AN EMPTY ITEM\n");
+		fprintf(stderr, "CANNOT PRINT A NULLITY\n");
 		return 1;
 	
 	}
@@ -574,7 +592,7 @@ static int read(void* stk, void* lex) {
 static int putcharacter(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
 
-	if (pd->type != INTEGER) {
+	if (pd != NULL || pd->type != INTEGER) {
 		fprintf(stderr, "CHAR CODE MUST BE AN INTEGER\n");
 		free_parusdata(pd);
 		return 1;
@@ -587,7 +605,13 @@ static int putcharacter(void* stk, void* lex) {
 }
 
 static int dpl(void* stk, void* lex) {
-	ParusData* pd	= stack_pull(stk);
+	ParusData* pd = stack_pull(stk);
+	
+	if (pd == NULL) {
+		fprintf(stderr, "NOTHING TO DUPLICATE\n");
+		return 1;
+	}
+
 	
 	stack_push(stk, pd);
 	stack_push(stk, parusdata_copy(pd));
@@ -621,7 +645,8 @@ static int for_macro(void* stk, void* lex) {
 	ParusData* min 	= stack_pull(stk);
 	ParusData* sym 	= stack_pull(stk);
 
-	if (inc->type != INTEGER ||
+	if (fn == NULL || inc == NULL || cmp == NULL || max == NULL || min == NULL || sym == NULL 
+		||inc->type != INTEGER ||
 			min->type != INTEGER || max->type != INTEGER ||
 			sym->type != SYMBOL || 
 			!(cmp->type == SYMBOL || cmp->type == COMPOUND_MACRO)) {
