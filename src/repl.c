@@ -114,6 +114,7 @@ void do_file(FILE* f, Stack* stk, Lexicon* lex) {
 
 	buffer[i] = '\0';
 	parus_eval(buffer, stk, lex);
+	fclose(f);
 
 }
 
