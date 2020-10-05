@@ -18,12 +18,12 @@ Further more some sections in the code should be re-written
 # Technical Details
 
 This interpreter is built around simplicity,
-It doesn't use any bytecode compliation, as a result programs won't run quickly as they should if they would haven been compiled.
-Once I will be happy with the interpreter I might write a compiler ( in the far future )
+It doesn't use any bytecode compliation, as a result programs won't run quickly as they should if they would have been compiled.
 
+Nevertheless it optimize the last call in a macro ( a re-call ) and it "compiles" usermacro to an intermediate representation instead of evaluating it as string.
+This implementation for simplicity doesn't implement quotation as a pointer, but as prefix to a symbol.
 
-Nevertheless it optimize the last call in a macro ( a re-call ) and it "compiles" user macro to an intermediate representation instead of evaluating a string.
-
+Further more, for sake of simplicity this implementation doesn't support strings and arrays.
 
 CParus can also be used as a library, for details refer to repl.c
 
@@ -36,10 +36,10 @@ https://gitlab.com/oren_daniel/parus-definition/-/blob/master/parus-definition
 if token is self evaluating:
 	push it to the stack
 
-if token is ! ( imperative form ):
+elseif token is ! ( imperative form ):
 	apply the item in the top of the stack
 
-if token is pre-fixed with ' ( the quote form - a symbol ):
+elseif token is pre-fixed with ' ( the quote form - a symbol ):
 	quotate it and push it the stack
 
 else:
