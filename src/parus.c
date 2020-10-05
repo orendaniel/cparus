@@ -526,6 +526,8 @@ the function will automatically free pd if needed
 */
 static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 
+	recall:
+
 	if (pd == NULL)
 		return;
 
@@ -533,8 +535,11 @@ static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		stack_push(stk, pd);
 	
 	else if (pd->type == SYMBOL) {
-		parus_eval(parusdata_getsymbol(pd), stk, lex);
+		ParusData* binding = lexicon_get(lex, parusdata_getsymbol(pd));
 		free_parusdata(pd);
+		pd = binding;
+
+		goto recall;
 	}
 
 	else if (pd->type == QUOTED) {
@@ -701,6 +706,8 @@ int parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 
 	if (strlen(expr) == 0 || is_comment(expr) || isspace(expr[0]))
 		return 0;
+	
+	int offset = quote_count(expr);
 
 	/* self evaluating forms */
 	if (is_usermacro(expr)) {
@@ -725,9 +732,16 @@ int parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 
 	/* quoted forms */
 	else if (is_quoted(expr)) {
-		int offset = quote_count(expr);
 
-		if (is_integer(expr + offset))
+		if (is_usermacro(expr + offset)) {
+			ParusData* mcr = new_parusdata_usermacro(expr + offset);
+			if (mcr == NULL)
+				return 0;
+			stack_push(stk, mcr);
+
+		}
+
+		else if (is_integer(expr + offset))
 			stack_push(stk, new_parusdata_integer(atoi(expr + offset)));
 
 		else if (is_decimal(expr + offset))

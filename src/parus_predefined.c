@@ -123,28 +123,11 @@ static int quote(void* stk, void* lex) {
 		return 1;
 	}
 
-	if (pd->type == INTEGER || pd->type == DECIMAL)
+	if (pd->type == SYMBOL || pd->type == QUOTED)
+		stack_push(stk, new_parusdata_quote(pd));
+
+	else 
 		stack_push(stk, pd);
-	else if (pd->type == SYMBOL) {
-		char* 	sym 	= parusdata_getsymbol(pd);
-		int 	len 	= strlen(sym) +2; // space for additional quote and '\0'
-		char* 	new_sym = malloc(len * sizeof(char));
-		new_sym[0] = '\'';
-
-		int i;
-		for (i = 1; i < len -1; i++)
-			new_sym[i] = sym[i -1];
-		new_sym[i] = '\0';
-
-		free_parusdata(pd);
-		stack_push(stk, new_parusdata_symbol(new_sym));
-
-	}
-	else {
-		fprintf(stderr, "UNQUOTABLE TYPE\n");
-		free_parusdata(pd);
-		return 1;
-	}
 
 	return 0;
 }
