@@ -43,6 +43,7 @@ typedef struct {
 		integer_t	integer;
 		decimal_t 	decimal;
 		char* 		symbol;
+		void* 		quoted; // pointer to ParusData
 		primitve_t	primitve;
 
 		struct { 
@@ -50,11 +51,13 @@ typedef struct {
 			size_t 	max;
 			size_t 	size;
 		} usermacro;
+
 	} data;
 	enum {
 		INTEGER,
 		DECIMAL,
 		SYMBOL,
+		QUOTED,
 		PRIMITIVE_MACRO,
 		USER_MACRO,
 		NONE // marks the instance as freed
@@ -89,9 +92,12 @@ ParusData* 		new_parusdata_decimal(decimal_t d);
 decimal_t 		parusdata_todecimal(ParusData* pd);
 ParusData* 		new_parusdata_symbol(char* s);
 char* 			parusdata_getsymbol(ParusData* pd);
+ParusData* 		new_parusdata_quote(ParusData* quoted);
+ParusData* 		parusdata_unquote(ParusData* pd);
 ParusData* 		new_parusdata_primitive(primitve_t p);
 ParusData* 		new_parusdata_usermacro(char* expr);
 void 			free_parusdata(ParusData* pd);
+void 			print_parusdata(ParusData* pd);
 
 Stack* 		new_stack();
 void 		stack_push(Stack* stk, ParusData* pd);

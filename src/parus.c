@@ -72,12 +72,19 @@ static char is_decimal(char* s) {
     return *p == '\0';
 }
 
+static char is_imperative(char* s) {
+	return s[0] == '!' && strcount(s) == 1;
+}
+
 static char is_quoted(char* s) {
 	return s[0] == '\'';
 }
 
-static char is_imperative(char* s) {
-	return s[0] == '!' && strcount(s) == 1;
+static ParusData* quotate_symbol(char* expr) {
+	if (expr[1] != '\'')
+		return new_parusdata_symbol(copy_string(expr +1));
+	else
+		return new_parusdata_quote(quotate_symbol(expr +1));
 }
 
 static char is_symbol(char* s) {
@@ -100,7 +107,6 @@ static int quote_count(char* s) {
 	return i;
 }
 
-
 /* inserts an instruction to a mcr */
 static void insert_instruction(ParusData* mcr, ParusData* instr) {
 	if (mcr->type != USER_MACRO) {
@@ -122,6 +128,70 @@ static void insert_instruction(ParusData* mcr, ParusData* instr) {
 	}
 }
 
+/*
+make a new parusdata as usermacro
+A usermacro is represented by a list of ParusData that are evaluated sequentially
+
+expr is the textual representation of the macro with the openning ( emitted sense it is unneeded 
+Example: DPL * )
+expr must be mutable
+*/
+static ParusData* make_usermacro(char* expr) {
+	ParusData* pd = calloc(1, sizeof(ParusData));
+	if (pd != NULL) {
+		pd->data.usermacro.instructions 	= calloc(USER_MACRO_INSTR_GROWTH, sizeof(ParusData));
+		pd->data.usermacro.max 				= USER_MACRO_INSTR_GROWTH;
+		pd->data.usermacro.size 			= 0;
+		pd->type = USER_MACRO;
+		
+		// variables to store the "car" and "cdr" of the string expr
+		static char* token; 
+		static char* rest;
+		rest = expr;
+
+		char terminated = 0;
+
+		while ((token = strtok_r(rest, " ", &rest))) {
+
+			if (is_usermacro(token)) {
+				ParusData* submcr = make_usermacro(rest);
+
+				if (submcr == NULL) {
+					free_parusdata(submcr);
+					goto unterminated;
+				}
+
+				insert_instruction(pd, submcr);
+				continue; // continue to next token
+
+			}
+				
+			else if (is_termination(token)) {
+				terminated = 1;
+				break;
+			}
+
+			if (is_integer(token))
+				insert_instruction(pd, new_parusdata_integer(atoi(token)));
+
+			else if (is_decimal(token))
+				insert_instruction(pd, new_parusdata_decimal(atof(token)));
+
+			else if (is_symbol(token))
+				insert_instruction(pd, new_parusdata_symbol(copy_string(token)));
+		}
+		
+		if (!terminated) {
+			fprintf(stderr, "UN-TERMINATED MACRO\n"); // print error only once
+			unterminated:
+			free_parusdata(pd);
+			return NULL;
+		}
+	}
+
+	return pd;
+}
+
 // PARUSDATA
 // ----------------------------------------------------------------------------------------------------
 /* Returns a new copy of ParusData* */
@@ -134,6 +204,9 @@ ParusData* parusdata_copy(ParusData* original) {
 
 	else if (original->type == SYMBOL)
 		return new_parusdata_symbol(copy_string(parusdata_getsymbol(original)));
+
+	else if (original->type == QUOTED)
+		return new_parusdata_quote(parusdata_copy(parusdata_unquote(original)));
 
 	else if (original->type == PRIMITIVE_MACRO)
 		return new_parusdata_primitive(original->data.primitve);
@@ -198,6 +271,21 @@ char* parusdata_getsymbol(ParusData* pd) {
 	return pd->data.symbol;
 }
 
+/* returns a new quoted value */
+ParusData* new_parusdata_quote(ParusData* quoted) {
+	ParusData* pd = calloc(1, sizeof(ParusData));
+	if (pd != NULL) {
+		pd->data.quoted 	= quoted;
+		pd->type 			= QUOTED;
+	}
+	return pd;
+}
+
+/* returns the quoted ParusData* */
+ParusData* parusdata_unquote(ParusData* pd) {
+	return pd->data.quoted;
+}
+
 /* makes a new parusdata as a primitive macro */ 
 ParusData* new_parusdata_primitive(primitve_t p) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
@@ -208,71 +296,24 @@ ParusData* new_parusdata_primitive(primitve_t p) {
 	return pd;
 }
 
-/*
-make a new parusdata as usermacro
-A usermacro is represented by a list of ParusData that are evaluated sequentially
-*/
+/* returns a new user defined macro */
 ParusData* new_parusdata_usermacro(char* expr) {
-	ParusData* pd = calloc(1, sizeof(ParusData));
-	if (pd != NULL) {
-		pd->data.usermacro.instructions 	= calloc(USER_MACRO_INSTR_GROWTH, sizeof(ParusData));
-		pd->data.usermacro.max 				= USER_MACRO_INSTR_GROWTH;
-		pd->data.usermacro.size 			= 0;
-		pd->type = USER_MACRO;
-		
-		// variables to store the "car" and "cdr" of the string expr
-		static char* token; 
-		static char* rest;
-		rest = expr;
-
-		char terminated = 0;
-
-		while ((token = strtok_r(rest, " ", &rest))) {
-
-			if (is_usermacro(token)) {
-				ParusData* submcr = new_parusdata_usermacro(rest);
-
-				if (submcr == NULL) {
-					free_parusdata(submcr);
-					goto unterminated;
-				}
-
-				insert_instruction(pd, submcr);
-				continue; // continue to next token
-
-			}
-				
-			else if (is_termination(token)) {
-				terminated = 1;
-				break;
-			}
-
-			if (is_integer(token))
-				insert_instruction(pd, new_parusdata_integer(atoi(token)));
-
-			else if (is_decimal(token))
-				insert_instruction(pd, new_parusdata_decimal(atof(token)));
-
-			else if (is_symbol(token))
-				insert_instruction(pd, new_parusdata_symbol(copy_string(token)));
-		}
-		
-		if (!terminated) {
-			fprintf(stderr, "UN-TERMINATED MACRO\n"); // print error only once
-			unterminated:
-			free_parusdata(pd);
-			return NULL;
-		}
-	}
-
-	return pd;
+	char* 		nexpr 	= copy_string(expr);
+	ParusData* 	mcr 	= make_usermacro(nexpr + 2);
+	free(nexpr);
+	return mcr;
 }
+
 
 /* free the parusdata */
 void free_parusdata(ParusData* pd) {
 	if (pd != NULL && pd->type != NONE) {
 		if (pd->type == SYMBOL)
 			free(pd->data.symbol);
+
+		else if (pd->type == QUOTED)
+			free_parusdata((ParusData*)pd->data.quoted);
+
 		else if (pd->type == USER_MACRO) {
 			for (int i = 0; i < pd->data.usermacro.size; i++) 
 				free_parusdata(pd->data.usermacro.instructions[i]);
@@ -283,6 +324,25 @@ void free_parusdata(ParusData* pd) {
 		free(pd);
 		pd->type = NONE; // mark as cleaned
 	}
+}
+
+void print_parusdata(ParusData* pd) {
+	if (pd->type == INTEGER) 
+		printf("%ld", parusdata_tointeger(pd));
+
+	else if (pd->type == DECIMAL)
+		printf("%f", parusdata_todecimal(pd));
+
+	else if (pd->type == SYMBOL)
+		printf("%s", parusdata_getsymbol(pd));
+
+	else if (pd->type == QUOTED) {
+		printf("'");
+		print_parusdata(parusdata_unquote(pd));
+	}
+
+	else
+		printf("macro@%x", pd);
 }
 
 // STACK
@@ -364,17 +424,8 @@ void free_stack(Stack* stk) {
 /* prints the stack contant */
 void stack_print(Stack* stk) {
 	for (int i = 0; i < stk->size; i++) {
-		if (stk->items[i]->type == INTEGER) 
-			printf("%ld, ", parusdata_tointeger(stk->items[i]));
-		
-		else if (stk->items[i]->type == DECIMAL)
-			printf("%f, ", parusdata_todecimal(stk->items[i]));
-
-		else if (stk->items[i]->type == SYMBOL)
-			printf("%s, ", parusdata_getsymbol(stk->items[i]));
-
-		else
-			printf("parusdata@%x, ", stk->items[i]);
+		print_parusdata(stk->items[i]);
+		printf(", ");
 
 	}
 	printf("\n");
@@ -458,17 +509,9 @@ void free_lexicon(Lexicon* lex) {
 /* prints the lexicon contant */
 void lexicon_print(Lexicon* lex) {
 	for (int i = 0; i < lex->size; i++) {
-		if (lex->entries[i].value->type == INTEGER)	
-			printf("%s : %ld\n", lex->entries[i].name, parusdata_tointeger(lex->entries[i].value));
-
-		else if (lex->entries[i].value->type == DECIMAL)	
-			printf("%s : %f\n", lex->entries[i].name, parusdata_todecimal(lex->entries[i].value));
-
-		else if (lex->entries[i].value->type == SYMBOL)	
-			printf("%s : %s\n", lex->entries[i].name, parusdata_getsymbol(lex->entries[i].value));
-
-		else
-			printf("%s : parusdata@%x\n", lex->entries[i].name, lex->entries[i].value);
+		printf("%s : ", lex->entries[i].name);
+		print_parusdata(lex->entries[i].value);
+		printf("\n");
 	}
 }
 
@@ -483,7 +526,6 @@ the function will automatically free pd if needed
 */
 static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 
-
 	if (pd == NULL)
 		return;
 
@@ -492,6 +534,12 @@ static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 	
 	else if (pd->type == SYMBOL) {
 		parus_eval(parusdata_getsymbol(pd), stk, lex);
+		free_parusdata(pd);
+	}
+
+	else if (pd->type == QUOTED) {
+		ParusData* unquoted = parusdata_copy(parusdata_unquote(pd));
+		stack_push(stk, unquoted);
 		free_parusdata(pd);
 	}
 
@@ -505,11 +553,10 @@ static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 	else if (pd->type == USER_MACRO) 
 		apply_usermacro(pd, stk, lex);
 
-
 }
 
 /* 
-handles usermacro
+handles user defined macros
 
 the function will automatically free mcr if needed
 
@@ -657,7 +704,7 @@ int parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 
 	/* self evaluating forms */
 	if (is_usermacro(expr)) {
-		ParusData* mcr = new_parusdata_usermacro(expr + 2);
+		ParusData* mcr = new_parusdata_usermacro(expr);
 		if (mcr == NULL)
 			return 0;
 		stack_push(stk, mcr);
@@ -686,8 +733,8 @@ int parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 		else if (is_decimal(expr + offset))
 			stack_push(stk, new_parusdata_decimal(atof(expr + offset)));
 
-		else if (is_symbol(expr +1))
-			stack_push(stk, new_parusdata_symbol(copy_string(expr +1)));
+		else if (is_symbol(expr + offset))
+			stack_push(stk, quotate_symbol(expr));
 
 		else {
 			fprintf(stderr, "INVALID QUOTATION FORM - %s\n", expr);
