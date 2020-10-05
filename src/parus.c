@@ -625,30 +625,42 @@ static void apply_usermacro(ParusData* mcr, Stack* stk, Lexicon* lex) {
 	
 	ParusData* last = mcr->data.usermacro.instructions[mcr->data.usermacro.size -1];
 
-	if (last->type != SYMBOL && last->type != QUOTED)
-		stack_push(stk, parusdata_copy(last)); // last instruction is self evaluating
+	if (last->type != SYMBOL && last->type != QUOTED) // self defining forms
+		stack_push(stk, parusdata_copy(last));
 	
-	else if (last->type == QUOTED)
+	else if (last->type == QUOTED) // apply quoted
 		apply(parusdata_copy(last), stk, lex);
+
+	/* 
+		This section handles the following cases
+		if last instruction is an imperative form then
+			if top is a symbol and is binded to macro, re-call
+			if top is a macro, re-call
+			else apply 
+		if last instruction is a symbol and is binded to a macro re-call
+		else apply
+	*/
 
 	else {
 		char* name = copy_string(parusdata_getsymbol(last));
-		if (is_imperative(name)) {
+		if (is_imperative(name)) { // last instruction is an imperative form
 			// no longer needed
 			free(name);
 
 			ParusData* top = stack_pull(stk);
 			
-			if (top->type == SYMBOL) {
+			if (top->type == SYMBOL) { // if top is a symbol
+				// get the value it is binded to
 				ParusData* pd = lexicon_get(lex, parusdata_getsymbol(top));
 				free_parusdata(top);
-
+				// re-call macro
 				if (pd->type == USER_MACRO) {
 					free_parusdata(mcr);
 					mcr = pd;
 					goto recall;
 
 				}
+				// not a macro regular apply
 				else {
 					apply(pd, stk, lex);
 					return; // done
@@ -656,6 +668,7 @@ static void apply_usermacro(ParusData* mcr, Stack* stk, Lexicon* lex) {
 			}
 
 			else if (top->type == USER_MACRO) {
+				// re-call macro
 				free_parusdata(mcr);
 				mcr = top;
 				goto recall;
@@ -670,13 +683,13 @@ static void apply_usermacro(ParusData* mcr, Stack* stk, Lexicon* lex) {
 			ParusData* pd = lexicon_get(lex, name);
 			free(name);
 
-			// if the last symbol doesn't represent a usermacro then apply the instruction
+			// if the last symbol isn't binded to a macro then apply the instruction
 			if (pd->type != USER_MACRO) {
 				apply(pd, stk, lex);
 				return; // done
 			}
-			// recall
 			else {
+				// re-call macro
 				free_parusdata(mcr);
 				mcr = pd;
 				goto recall;

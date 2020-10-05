@@ -551,6 +551,24 @@ static int outln(void* stk, void* lex) {
 }
 
 static int read(void* stk, void* lex) {
+
+	/* copied from parus.c */
+	char is_integer(char* s) {
+		if (s == NULL || *s == '\0' || isspace(*s))
+		  return 0;
+		char * p;
+		strtol(s, &p, 10);
+		return *p == '\0';
+	}
+
+	char is_decimal(char* s) {
+		if (s == NULL || *s == '\0' || isspace(*s)) 
+		  return 0;
+		char * p;
+		strtod(s, &p);
+		return *p == '\0';
+	}
+
 	int c;
 	int i = 1;
 
@@ -567,6 +585,10 @@ static int read(void* stk, void* lex) {
 			i++;
 		}
 	}
+	if (is_integer(buffer +1) || is_decimal(buffer +1))
+		parus_literal_eval(buffer +1, stk, lex);
+	else
+		parus_literal_eval(buffer, stk, lex);
 
 
 	return 0;
@@ -575,7 +597,7 @@ static int read(void* stk, void* lex) {
 static int putcharacter(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
 
-	if (pd != NULL || pd->type != INTEGER) {
+	if (pd == NULL || pd->type != INTEGER) {
 		fprintf(stderr, "CHAR CODE MUST BE AN INTEGER\n");
 		free_parusdata(pd);
 		return 1;
