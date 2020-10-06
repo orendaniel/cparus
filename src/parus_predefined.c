@@ -525,19 +525,11 @@ static int out(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
 	if (pd == NULL) {
 		free_parusdata(pd);
-		fprintf(stderr, "CANNOT PRINT A NULLITY\n");
+		fprintf(stderr, "CANNOT PRINT NULLITY\n");
 		return 1;
 	
 	}
-	if (pd->type == INTEGER)
-		printf("%ld", parusdata_tointeger(pd));
-	else if (pd->type == DECIMAL)
-		printf("%f", parusdata_todecimal(pd));
-	else if (pd->type == SYMBOL)
-		printf("%s", parusdata_getsymbol(pd));
-	else
-		printf("parusdata");
-
+	print_parusdata(pd);
 	free_parusdata(pd);
 	return 0;
 
