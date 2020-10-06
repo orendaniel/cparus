@@ -118,16 +118,15 @@ static int if_func(void* stk, void* lex) {
 static int quote(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
 
-	if (pd == NULL) {
+	if (pd == NULL || !(pd->type == SYMBOL || pd->type == QUOTED)) {
+		free_parusdata(pd);
 		fprintf(stderr, "CAN NOT PREFORM QUOTE OPERATION\n");
 		return 1;
 	}
 
-	if (pd->type == SYMBOL || pd->type == QUOTED)
+	else 
 		stack_push(stk, new_parusdata_quote(pd));
 
-	else 
-		stack_push(stk, pd);
 
 	return 0;
 }
