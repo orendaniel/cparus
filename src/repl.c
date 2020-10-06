@@ -79,6 +79,8 @@ void do_file(FILE* f, Stack* stk, Lexicon* lex) {
 
 	int c;
 
+	char ignore = 0;
+
 	while ((c = fgetc(f)) != EOF) {
 		if (i == MAX_LENGTH) {
 			printf("Maximal statement length of %d character exceeded\n", MAX_LENGTH);
@@ -103,12 +105,16 @@ void do_file(FILE* f, Stack* stk, Lexicon* lex) {
 			if (e != 0)
 				return;
 		}
-		else  {
-			if (!isspace(c))
-				buffer[i] = c;
-			else
-				buffer[i] = ' ';
-			i++;
+		else {
+			if (!isspace(c)) {
+				buffer[i++] = c;
+				ignore = 0;
+			}
+			else {
+				if (!ignore) // don't collect junk spaces
+					buffer[i++] = ' ';
+				ignore = 1;
+			}
 		}
 	}
 
