@@ -18,7 +18,7 @@ Further more some sections in the code should be re-written
 # Technical Details
 
 This interpreter is built around simplicity,
-It doesn't use any bytecode compliation, as a result programs won't run quickly as they should if they would have been compiled.
+It doesn't use any bytecode compliation, as a result programs won't run as quickly as they could run if they were compiled.
 
 Nevertheless it optimize the last call in a macro ( a re-call ) and it "compiles" usermacro to an intermediate representation instead of evaluating it as string.
 
@@ -42,13 +42,13 @@ elseif token is pre-fixed with ' ( the quote form - a symbol ):
 	quotate it and push it the stack
 
 else:
-	apply the tokens binding
+	apply the token's binding
 
 # Examples
 
 ; Inspect the memory using ?stk and ?lex.
 
-3 2 + OUT
+3 2 + OUTLN
 
 ; ==> 5
 
@@ -56,7 +56,7 @@ else:
 
 ( DPL * ) '^2 DEF
 
-5 ^2 OUT
+5 ^2 OUTLN
 
 ; ==> 25
 
@@ -64,7 +64,7 @@ else:
 
 3 'a DEF
 
-b ! OUT 
+b ! OUTLN
 
 ; ==> 3
 
