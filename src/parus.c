@@ -360,7 +360,7 @@ void print_parusdata(ParusData* pd) {
 	}
 
 	else
-		printf("macro@%x", pd);
+		printf("parusdata@%x", pd);
 }
 
 // STACK

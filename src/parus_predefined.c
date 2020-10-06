@@ -47,6 +47,9 @@ static char equivalent(ParusData* pd1, ParusData* pd2) {
 
 	else if (is_number(pd1) && is_number(pd2))
 		return force_decimal(pd1) == force_decimal(pd2);
+	
+	else if (pd1->type == QUOTED && pd2->type == QUOTED)
+		return equivalent(parusdata_unquote(pd1), parusdata_unquote(pd2));
 
 	else 
 		return pd1 == pd2;
