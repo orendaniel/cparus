@@ -277,6 +277,18 @@ static int is_top_symbol(void* stk, void* lex) {
 
 }
 
+static int is_top_quoted(void* stk, void* lex) {
+	ParusData* pd = stack_get_at(stk, 0);
+	if (pd != NULL && pd->type == QUOTED)
+		stack_push(stk, new_parusdata_integer(1));
+	else
+		stack_push(stk, new_parusdata_integer(0));
+
+	free_parusdata(pd);
+	return 0;
+
+}
+
 static int add(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
 	ParusData* pd1 = stack_pull(stk);
@@ -712,6 +724,7 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "DECIMAL?", new_parusdata_primitive(&is_top_decimal));
 	lexicon_define(lex, "MACRO?", new_parusdata_primitive(&is_top_macro));
 	lexicon_define(lex, "SYMBOL?", new_parusdata_primitive(&is_top_symbol));
+	lexicon_define(lex, "QUOTED?", new_parusdata_primitive(&is_top_quoted));
 
 	// arithmatics
 	lexicon_define(lex, "+", new_parusdata_primitive(&add));
