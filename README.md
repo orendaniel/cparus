@@ -21,7 +21,6 @@ This interpreter is built around simplicity,
 It doesn't use any bytecode compliation, as a result programs won't run quickly as they should if they would have been compiled.
 
 Nevertheless it optimize the last call in a macro ( a re-call ) and it "compiles" usermacro to an intermediate representation instead of evaluating it as string.
-This implementation for simplicity doesn't implement quotation as a pointer, but as prefix to a symbol.
 
 Further more, for sake of simplicity this implementation doesn't support strings and arrays.
 
