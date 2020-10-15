@@ -143,7 +143,7 @@ static void insert_instruction(ParusData* mcr, ParusData* instr) {
 make a new parusdata as usermacro
 A usermacro is represented by a list of ParusData that are evaluated sequentially
 
-expr is the textual representation of the macro with the openning ( emitted sense it is unneeded 
+expr is the textual representation of the macro with the openning emitted sense it is unneeded 
 Example: DPL * )
 expr must be mutable
 */
@@ -190,7 +190,7 @@ static ParusData* make_usermacro(char* expr) {
 				insert_instruction(pd, new_parusdata_decimal(atof(token)));
 
 			else if (is_imperative(token)) // imperative is implementated as a symbol
-				insert_instruction(pd, new_parusdata_symbol(copy_string("!")));
+				insert_instruction(pd, new_parusdata_symbol("!"));
 
 			else if (is_quoted(token) && is_symbol(token + quote_count(token)))
 				insert_instruction(pd, new_parusdata_quote(quotate_symbol(token)));
@@ -218,6 +218,7 @@ static ParusData* make_usermacro(char* expr) {
 
 // PARUSDATA
 // ----------------------------------------------------------------------------------------------------
+
 /* Returns a new copy of ParusData* */
 ParusData* parusdata_copy(ParusData* original) {
 	if (original->type == INTEGER)
@@ -370,6 +371,7 @@ void print_parusdata(ParusData* pd) {
 
 // STACK
 // ----------------------------------------------------------------------------------------------------
+
 /* 
 makes a new parus stack 
 EVERY ITEM SHOULD BE UNIQUE
@@ -394,6 +396,8 @@ void stack_push(Stack* stk, ParusData* pd) {
 			stk->max += STACK_GROWTH;
 			stk->items[stk->size++] = pd;
 		}
+		else
+			fprintf(stderr, "STACK OVERFLOW\n");
 	}
 }
 
@@ -456,6 +460,7 @@ void stack_print(Stack* stk) {
 
 // LEXICON
 // ----------------------------------------------------------------------------------------------------
+
 /* 
 makes a new lexicon 
 outer = NULL for outmost lexicon
@@ -541,11 +546,11 @@ void lexicon_print(Lexicon* lex) {
 // EVALUATOR
 // ----------------------------------------------------------------------------------------------------
 
-
 /*
 applies a parusdata 
 
 the function will automatically free pd if needed
+
 */
 static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 
@@ -617,7 +622,7 @@ static void apply_usermacro(ParusData* mcr, Stack* stk, Lexicon* lex) {
 		if (instr->type != SYMBOL && instr->type != QUOTED)
 			stack_push(stk, parusdata_copy(instr));
 
-		else if (instr->type == SYMBOL && is_imperative(parusdata_getsymbol(instr)))
+		else if (instr->type == SYMBOL && is_imperative(parusdata_getsymbol(instr))) // if ! symbol
 			apply(stack_pull(stk), stk, lex);
 
 		else {
@@ -812,5 +817,4 @@ void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
 	eval(buffer, stk, lex);
 	
 	free(buffer);
-
 }
