@@ -578,10 +578,10 @@ static int read(void* stk, void* lex) {
 			i++;
 		}
 	}
-	/*if (is_integer(buffer +1) || is_decimal(buffer +1))
-		parus_literal_eval(buffer +1, stk, lex);
+	if (is_integer(buffer +1) || is_decimal(buffer +1))
+		parus_evaluate(buffer +1, stk, lex);
 	else
-		parus_literal_eval(buffer, stk, lex);*/
+		parus_evaluate(buffer, stk, lex);
 
 
 	return 0;
@@ -666,7 +666,7 @@ static int for_macro(void* stk, void* lex) {
 		stack_push(stk, new_parusdata_integer(i));
 		stack_push(stk, parusdata_copy(max));
 		stack_push(stk, parusdata_copy(cmp));
-		//parus_literal_eval("!", stk, lex);
+		parus_evaluate("!", stk, lex);
 
 
 		ParusData* 	cond 		= stack_pull(stk);
@@ -679,7 +679,7 @@ static int for_macro(void* stk, void* lex) {
 			lexicon_define(lex, parusdata_getsymbol(sym), new_parusdata_integer(i));
 
 			stack_push(stk, parusdata_copy(fn));
-			//parus_literal_eval("!", stk, lex);
+			parus_evaluate("!", stk, lex);
 
 			lexicon_delete(lex, parusdata_getsymbol(sym));
 			i += parusdata_tointeger(inc);		
