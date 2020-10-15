@@ -115,6 +115,5 @@ void 		free_lexicon(Lexicon* lex);
 void 		lexicon_print(Lexicon* lex);
 
 
-int parus_eval(char* expr, Stack* stk, Lexicon* lex);
-int parus_literal_eval(const char* literal, Stack* stk, Lexicon* lex);
+void parus_evaluate(char* input, Stack* stk, Lexicon* lex);
 #endif

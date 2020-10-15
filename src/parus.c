@@ -21,17 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 static void apply_usermacro(ParusData* mcr, Stack* stk, Lexicon* lex);
 static void apply(ParusData* mcr, Stack* stk, Lexicon* lex);
+static int 	eval(char* expr, Stack* stk, Lexicon* lex);
 
 // HELPERS
 // ----------------------------------------------------------------------------------------------------
-
-static int strcount(char* s) {
-	int i = 0;
-	while (!isspace(s[i]) && s[i] != '\0')
-		i++;
-
-	return i;
-}
 
 static char* copy_string(char* s) {
 	int size = 0;
@@ -44,16 +37,12 @@ static char* copy_string(char* s) {
 	return ns;
 }
 
-static char is_comment(char* s) {
-	return s[0] == ';';
-}
-
 static char is_usermacro(char* s) {
-	return s[0] == '(' && strcount(s) == 1;
+	return s[0] == '(' && (s[1] == '\0' || isspace(s[1]));
 }
 
 static char is_termination(char* s) {
-	return s[0] == ')' && strcount(s) == 1;
+	return s[0] == ')' && (s[1] == '\0' || isspace(s[1]));
 }
 
 static char is_integer(char* s) {
@@ -73,7 +62,7 @@ static char is_decimal(char* s) {
 }
 
 static char is_imperative(char* s) {
-	return s[0] == '!' && strcount(s) == 1;
+	return s[0] == '!' && (s[1] == '\0' || isspace(s[1]));
 }
 
 static char is_quoted(char* s) {
@@ -88,22 +77,15 @@ static ParusData* quotate_symbol(char* expr) {
 }
 
 static char is_symbol(char* s) {
-	int i = 0;
-	char valid = 0;
-	while (s[i] != '\0' && s[i] != '\n') {
-		if (isspace(s[i]))
-			return 0;
-		if (s[i] != '\'')
-			valid = 1;
-		i += 1;
-	}
-	return valid 
-		&& !is_quoted(s) 
-		&& !is_imperative(s) 
+	int 	i 		= 0;
+	char 	valid 	= 0;
+
+	return !is_termination(s)
+		&& !is_usermacro(s)
 		&& !is_integer(s) 
 		&& !is_decimal(s) 
-		&& !is_usermacro(s)
-		&& !is_termination(s);
+		&& !is_imperative(s) 
+		&& !is_quoted(s);
 }
 
 static int quote_count(char* s) {
@@ -111,6 +93,29 @@ static int quote_count(char* s) {
 	while (s[i] == '\'' && s[i] != '\0')
 		i++;
 	return i;
+}
+
+static void clear_buffer(char* buffer) {
+    int i = 0;
+    while (buffer[i] != '\0') {
+        buffer[i] = '\0';
+		i++;
+	}
+}
+
+static int parencount(char* str) {
+	int result = 0;
+	int i = 0;
+	while (str[i] != '\0') {
+		if (is_usermacro(str +i)) 
+			result++;
+
+		else if (is_termination(str +i))
+			result--;
+		i++;
+
+	}   
+	return result;
 }
 
 /* inserts an instruction to a mcr */
@@ -699,23 +704,26 @@ static void apply_usermacro(ParusData* mcr, Stack* stk, Lexicon* lex) {
 }
 
 /* 
-The Parus Evaluator
 
-Evaluates a single expression at a time 
+Evaluates a single expression at a time, not including comments
+
+pass only mutable strings to eval as this function mutates the string
 
 returns 0 only if parsed correctly
 NOT IF OPERATION RAN CORRECTLY
 */
-int parus_eval(char* expr, Stack* stk, Lexicon* lex) {
+static int eval(char* expr, Stack* stk, Lexicon* lex) {
 
+	/* pass */
+	if (isspace(expr[0]) || expr[0] == '\0')
+		return 0;
+
+	/* validate syntax */
 	if (is_termination(expr)) {
 		fprintf(stderr, "EXPECTED MACRO\n");
 		return 1;
 	}
 
-	if (strlen(expr) == 0 || is_comment(expr) || isspace(expr[0]))
-		return 0;
-	
 	/* self evaluating forms */
 	if (is_usermacro(expr)) {
 		ParusData* mcr = new_parusdata_usermacro(expr);
@@ -750,19 +758,59 @@ int parus_eval(char* expr, Stack* stk, Lexicon* lex) {
 
 
 	/* apply for given symbol */
-	else {
+	else if (is_symbol(expr)) {
 		ParusData* pd = lexicon_get(lex, expr);
 		apply(pd, stk, lex);
 	}
 
+	else {
+		fprintf(stderr, "SYNTAX ERROR - %s\n", expr);
+		return 1;
+
+	} 
+
 	return 0;
 }
 
-/* evaluate a literal string */
-int parus_literal_eval(const char* literal, Stack* stk, Lexicon* lex) {
-	char* nexpr = copy_string((char*)literal); // copy_string doesn't change the memory
+/* The Parus Evaluator */
+void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
 
-	int e = parus_eval(nexpr, stk, lex);
-	free(nexpr);
-	return e;
+	char* buffer = malloc((strlen(input)+1)*sizeof(char));
+	clear_buffer(buffer);
+
+	int i = 0;
+	int j = 0;
+	int c;
+
+	while ((c = input[i++]) != '\0') {
+
+		if (c == ';') { // comment skip to next line
+			buffer[j] = ' ';
+			while ((c = input[++i]) != '\n' && c != '\0');
+		} 
+
+		else if (isspace(c) && parencount(buffer) <= 0) { // if balanced expression
+			buffer[j] = '\0';
+
+			int e = eval(buffer, stk, lex);
+
+			clear_buffer(buffer);
+			j = 0;
+			if (e != 0)
+				break;
+		}
+		else  {
+			if (isspace(c)) 
+				buffer[j] = ' ';
+			else
+				buffer[j] = c;
+			j++;
+		}
+	}
+
+	buffer[j] = '\0';
+	eval(buffer, stk, lex);
+	
+	free(buffer);
+
 }

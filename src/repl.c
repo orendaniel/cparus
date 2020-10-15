@@ -23,12 +23,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "parus.h"
 #include "parus_predefined.h"
 
-#define MAX_LENGTH 2048
 
+// copied from parus.c
+int parencount(char* str) {
+	int result = 0;
+	int i = 0;
+	while (str[i] != '\0') {
+		if (str[i] == '(' && (str[i +1] == '\0' || isspace(str[i +1])))
+			result++;
 
+		else if (str[i] == ')' && (str[i +1] == '\0' || isspace(str[i +1])))
+			result--;
+		i++;
+
+	}   
+	return result;
+}
 
 char file_exists(char* filename) {
-	struct stat   buffer;   
+	struct stat buffer;   
 	return stat(filename, &buffer) == 0;
 }
 
@@ -40,20 +53,6 @@ void clear_buffer(char* buffer) {
 	}
 }
 
-int parencount(char* str) {
-	int result = 0;
-	int i = 0;
-	while (str[i] != '\0') {
-
-		if (str[i] == '(')
-			result++;
-		else if (str[i] == ')')
-			result--;
-		i++;
-
-	}   
-	return result;
-}
 
 void print_title() {
 	printf("CParus version 0.55\n");
@@ -71,114 +70,10 @@ void print_help() {
 
 }
 
-void do_file(FILE* f, Stack* stk, Lexicon* lex) {
-	char buffer[MAX_LENGTH];
-	clear_buffer(buffer);
-
-	int i = 0;
-
-	int c;
-
-	char ignore = 0;
-
-	while ((c = fgetc(f)) != EOF) {
-		if (i == MAX_LENGTH) {
-			printf("Maximal statement length of %d character exceeded\n", MAX_LENGTH);
-			return;
-		}
-		
-		//ignore until \n or end of file
-		if (c == ';') {
-			while (c != EOF && c != '\n')
-				c = fgetc(f);
-			if (c == EOF)
-				break;
-		} 
-
-		if (isspace(c) && parencount(buffer) <= 0) { // if balanced expression
-			buffer[i] = '\0';
-
-			int e = parus_eval(buffer, stk, lex);
-
-			clear_buffer(buffer);
-			i = 0;
-			if (e != 0)
-				return;
-		}
-		else {
-			if (!isspace(c)) {
-				buffer[i++] = c;
-				ignore = 0;
-			}
-			else {
-				if (!ignore) // don't collect junk spaces
-					buffer[i++] = ' ';
-				ignore = 1;
-			}
-		}
-	}
-
-	buffer[i] = '\0';
-	parus_eval(buffer, stk, lex);
-	fclose(f);
-
-}
-
-void do_line(char* input, Stack* stk, Lexicon* lex) {
-	char* buffer = malloc((strlen(input)+1)*sizeof(char));
-
-	clear_buffer(buffer);
-
-	int i = 0;
-	int j = 0;
-	int c;
-
-	while ((c = input[i++]) != '\0') {
-		if (isspace(c) && parencount(buffer) <= 0) { // if balanced expression
-			buffer[j] = '\0';
-
-			int e = parus_eval(buffer, stk, lex);
-
-			clear_buffer(buffer);
-			j = 0;
-			if (e != 0)
-				break;
-		}
-		else  {
-			buffer[j] = c;
-			j++;
-		}
-	}
-
-	buffer[j] = '\0';
-	parus_eval(buffer, stk, lex);
-	
-	free(buffer);
-}
-
-char* readline_without_comment(const char* s) {
-	char* 	input 	= readline(s);
-	char 	discard = 0;
-
-	if (input == NULL)
-		return NULL;
-
-	int i = 0;
-	while (input[i] != '\0') {
-		if (input[i] == ';') 
-			discard = 1;
-
-		if (discard)
-			input[i] = ' '; // removes comments from input
-		i++;
-	}
-	return input;
-}
-
 int main(int argc, char** argv) {
 	char 	norepl 		= 0;
 	char 	help 		= 0;
-	char 	notitle 		= 0;
+	char 	notitle 	= 0;
 	char* 	file_name 	= NULL;
 
 	for (int i = 1; i < argc; i++) {
@@ -205,25 +100,26 @@ int main(int argc, char** argv) {
 	Stack* 		stk = new_stack();
 	Lexicon* 	lex = predefined_lexicon();
 
-	if (file_name != NULL) {
+	/*if (file_name != NULL) {
 		FILE* f = fopen(file_name, "r");
 		if (f != NULL)
 			do_file(f, stk, lex);
 		else
 			printf("Cannot open file\n");
-	}
+	}*/
 
 	if (!norepl && !notitle) 
 		print_title();
 	while (!norepl) {
 		
-		char* input = readline_without_comment("CParus> ");
+		char* input = readline("CParus> ");
+
 		add_history(input);
 		if (!input)
 			break;
 
 		while (parencount(input) > 0) {
-			char* addition = readline_without_comment("...");
+			char* addition = readline("...");
 			add_history(addition);
 			if (!addition)
 				goto break_main_loop;
@@ -247,12 +143,12 @@ int main(int argc, char** argv) {
 		}
 
 
-		do_line(input, stk, lex);
+		parus_evaluate(input, stk, lex);
 		
 		free(input);
 	}
 	break_main_loop:
-	
+
 	free_stack(stk);
 	free_lexicon(lex);
 
