@@ -23,6 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "parus.h"
 #include "parus_predefined.h"
 
+#define TEXT_BUFFER_GROWTH 1024
+
 
 // copied from parus.c
 int parencount(char* str) {
@@ -38,11 +40,6 @@ int parencount(char* str) {
 
 	}   
 	return result;
-}
-
-char file_exists(char* filename) {
-	struct stat buffer;   
-	return stat(filename, &buffer) == 0;
 }
 
 void clear_buffer(char* buffer) {
@@ -70,6 +67,27 @@ void print_help() {
 
 }
 
+char* read_file(FILE* f) {
+	int 	size 	= 0;
+	int 	max 	= TEXT_BUFFER_GROWTH;
+	char* 	text 	= calloc(max, sizeof(char));
+
+	int c = 0;
+	while ((c = fgetc(f)) != EOF) {
+		if (size != max - 1) 
+			text[size++] = c;
+		else {
+			text = realloc(text, (max + TEXT_BUFFER_GROWTH) * sizeof(char));
+			if (text != 0) {
+				max += TEXT_BUFFER_GROWTH;
+				text[size++] = c;
+			}
+		}
+	}
+	return text;
+
+}
+
 int main(int argc, char** argv) {
 	char 	norepl 		= 0;
 	char 	help 		= 0;
@@ -83,10 +101,8 @@ int main(int argc, char** argv) {
 			help = 1;
 		else if (strcmp(argv[i], "-notitle") == 0)
 			notitle = 1;
-		else if (file_exists(argv[i]) && file_name == NULL)
+		else if (file_name == NULL)
 			file_name = argv[i];
-		else 
-			printf("File doesn't exists: %s\n", argv[i]);
 
 	}
 
@@ -97,19 +113,23 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 
-	Stack* 		stk = new_stack();
+	Stack*		stk = new_stack();
 	Lexicon* 	lex = predefined_lexicon();
 
-	/*if (file_name != NULL) {
+	if (file_name != NULL) {
 		FILE* f = fopen(file_name, "r");
-		if (f != NULL)
-			do_file(f, stk, lex);
+		if (f != NULL) {
+			char* text = read_file(f);
+			parus_evaluate(text, stk, lex);
+			free(text);
+		}
 		else
-			printf("Cannot open file\n");
-	}*/
+			printf("Cannot open file %s\nmake sure that the file exists\n", file_name);
+	}
 
 	if (!norepl && !notitle) 
 		print_title();
+
 	while (!norepl) {
 		
 		char* input = readline("CParus> ");
@@ -119,7 +139,7 @@ int main(int argc, char** argv) {
 			break;
 
 		while (parencount(input) > 0) {
-			char* addition = readline("...");
+			char* addition = readline("... ");
 			add_history(addition);
 			if (!addition)
 				goto break_main_loop;
