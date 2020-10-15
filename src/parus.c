@@ -190,7 +190,7 @@ static ParusData* make_usermacro(char* expr) {
 				insert_instruction(pd, new_parusdata_decimal(atof(token)));
 
 			else if (is_imperative(token)) // imperative is implementated as a symbol
-				insert_instruction(pd, new_parusdata_symbol("!"));
+				insert_instruction(pd, new_parusdata_symbol(copy_string("!")));
 
 			else if (is_quoted(token) && is_symbol(token + quote_count(token)))
 				insert_instruction(pd, new_parusdata_quote(quotate_symbol(token)));
