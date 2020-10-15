@@ -28,9 +28,9 @@ CParus can also be used as a library, for details refer to repl.c
 
 # The 4 Laws of the Parus language
 
-See the definition of the language in
+See also the Parus Manual:
 
-https://gitlab.com/oren_daniel/parus-definition/-/blob/master/parus-definition
+https://gitlab.com/oren_daniel/parus-manual
 
 if token is self evaluating:
 	push it to the stack
