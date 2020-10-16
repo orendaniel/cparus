@@ -388,17 +388,9 @@ static int divide(void* stk, void* lex) {
 		fprintf(stderr, "WARNING: DIVISION BY ZERO IS UNDEFINED BEHAVIOR\n");
 
 
-	if (pd1->type == INTEGER && pd2->type == INTEGER) {
-		integer_t a = parusdata_tointeger(pd1);
-		integer_t b = parusdata_tointeger(pd2);
-		stack_push(stk, new_parusdata_integer(a / b));
-	}
-	else {
-		decimal_t a = force_decimal(pd1);
-		decimal_t b = force_decimal(pd2);
-		stack_push(stk, new_parusdata_decimal(a / b));
-
-	}
+	decimal_t a = force_decimal(pd1);
+	decimal_t b = force_decimal(pd2);
+	stack_push(stk, new_parusdata_decimal(a / b));
 	
 	free_parusdata(pd1);
 	free_parusdata(pd2);
