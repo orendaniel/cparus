@@ -33,6 +33,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define MAXIMUM_CALL_DEPTH 25000
 
+#define HELP_MESSAGE "\nParus - Postfixed Reprogrammable Stack language\n" \
+	"Visit https://gitlab.com/oren_daniel/cparus for instructions and details.\n" \
+	"The language manual can be found at: https://gitlab.com/oren_daniel/parus-manual.\n" \
+	"Author's email: oren_daniel@protonmail.com\n\n" \
+	"flags: -help -norepl -notitle file\n\n" 
+
+#define TITLE_MESSAGE "CParus version 0.75\n" \
+	"CParus is free software under the GPLv3 license.\n" \
+	"Copyright (C) 2020  Oren Daniel\n" \
+	"Type ?help macro for help, or in the command line enter 'parus -help.'\n\n"
+
+
 typedef long 	integer_t;
 typedef double 	decimal_t;
 

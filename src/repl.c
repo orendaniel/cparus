@@ -42,32 +42,6 @@ int parencount(char* str) {
 	return result;
 }
 
-void clear_buffer(char* buffer) {
-    int i = 0;
-    while (buffer[i] != '\0') {
-        buffer[i] = '\0';
-		i++;
-	}
-}
-
-
-void print_title() {
-	printf("CParus version 0.75\n");
-	printf("CParus is free software under the GPLv3 license\n");
-	printf("Oren Daniel 2020 Ra'anana Israel\n");
-	printf("In the command line enter 'parus -help' for help\n\n");
-
-}
-
-void print_help() {
-	printf("\nParus - Postfixed Reprogrammable Stack language\n");
-	printf("Visit https://gitlab.com/oren_daniel/cparus for instructions and details\n");
-	printf("The language manual can be found at: https://gitlab.com/oren_daniel/parus-manual\n");
-	printf("Author's email: oren_daniel@protonmail.com\n\n");
-	printf("flags: -help -norepl -notitle file\n\n");
-
-}
-
 char* read_file(FILE* f) {
 	int 	size 	= 0;
 	int 	max 	= TEXT_BUFFER_GROWTH;
@@ -108,8 +82,8 @@ int main(int argc, char** argv) {
 	}
 
 	if (help) {
-		print_title();
-		print_help();
+		printf(TITLE_MESSAGE);
+		printf(HELP_MESSAGE);
 
 		return 0;
 	}
@@ -129,7 +103,7 @@ int main(int argc, char** argv) {
 	}
 
 	if (!norepl && !notitle) 
-		print_title();
+		printf(TITLE_MESSAGE);
 
 	while (!norepl) {
 		

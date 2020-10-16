@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <time.h>
 #include <math.h>
 
+
 #define READ_BUFFER 128
 
 static decimal_t force_decimal(ParusData* pd) {
@@ -697,6 +698,12 @@ int static now(void* stk, void* lex) {
 
 }
 
+int static help(void* stk, void* lex) {
+	printf(HELP_MESSAGE);
+	return 0;
+
+}
+
 Lexicon* predefined_lexicon() {
 	Lexicon* lex = new_lexicon(NULL);
 
@@ -749,6 +756,7 @@ Lexicon* predefined_lexicon() {
 	// misc
 	lexicon_define(lex, "NOW", new_parusdata_primitive(&now));
 
+	lexicon_define(lex, "?help", new_parusdata_primitive(&help));
 
 	return lex;
 
