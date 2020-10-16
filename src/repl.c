@@ -55,14 +55,15 @@ void print_title() {
 	printf("CParus version 0.75\n");
 	printf("CParus is free software under the GPLv3 license\n");
 	printf("Oren Daniel 2020 Ra'anana Israel\n");
-	printf("In the command line enter parus -help for help\n\n");
+	printf("In the command line enter 'parus -help' for help\n\n");
 
 }
 
 void print_help() {
 	printf("\nParus - Postfixed Reprogrammable Stack language\n");
 	printf("Visit https://gitlab.com/oren_daniel/cparus for instructions and details\n");
-	printf("Author email oren_daniel@protonmail.com\n\n");
+	printf("The language manual can be found at: https://gitlab.com/oren_daniel/parus-manual\n");
+	printf("Author's email: oren_daniel@protonmail.com\n\n");
 	printf("flags: -help -norepl -notitle file\n\n");
 
 }
