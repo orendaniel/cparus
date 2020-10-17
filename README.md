@@ -41,7 +41,7 @@ elseif token is ! (imperative form):
 elseif token is pre-fixed with a ' (quoted form) :
 	quotate it and push it the stack
 
-else:
+elseif symbol:
 	apply the token's binding
 
 # Examples
@@ -68,3 +68,10 @@ b ! OUTLN
 
 ; ==> 3
 
+; CParus also supports non-english characters
+
+''𐤔𐤋𐤅𐤌
+'שלום
+DEF
+
+3.14159 'π DEF
