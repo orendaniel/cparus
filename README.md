@@ -4,7 +4,7 @@ A C implementation of the Parus language
 
 # Postfixed Reprogrammable Stack language
 
-The language is named after Paridae bird family ( Tits, Titmices and Chickadees ).
+The language is named after Paridae bird family (Tits, Titmices and Chickadees).
 
 Members of the Paridae family are small and highly intelligent birds.
 
@@ -20,7 +20,7 @@ Further more some sections in the code should be re-written
 This interpreter is built around simplicity,
 It doesn't use any bytecode compliation, as a result programs won't run as quickly as they could run if they were compiled.
 
-Nevertheless it optimize the last call in a macro ( a re-call ) and it "compiles" usermacro to an intermediate representation instead of evaluating it as string.
+Nevertheless it optimize the last call in a macro (a re-call) and it "compiles" usermacro to an intermediate representation instead of evaluating it as string.
 
 Further more, for sake of simplicity this implementation doesn't support strings and arrays.
 
@@ -35,10 +35,10 @@ https://gitlab.com/oren_daniel/parus-manual
 if token is self evaluating:
 	push it to the stack
 
-elseif token is ! ( imperative form ):
+elseif token is ! (imperative form):
 	apply the item in the top of the stack
 
-elseif token is pre-fixed with ' ( the quote form - a symbol ):
+elseif token is pre-fixed with a ' (quoted form) :
 	quotate it and push it the stack
 
 else:
