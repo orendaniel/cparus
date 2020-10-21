@@ -19,8 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "parus.h"
 
 
-static void apply_usermacro(ParusData* mcr, Stack* stk, Lexicon* lex);
 static void apply(ParusData* mcr, Stack* stk, Lexicon* lex);
+static void apply_usermacro(ParusData* mcr, Stack* stk, Lexicon* lex);
 static int 	eval(char* expr, Stack* stk, Lexicon* lex);
 
 // HELPERS
