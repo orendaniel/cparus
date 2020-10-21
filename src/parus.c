@@ -230,7 +230,7 @@ ParusData* parusdata_copy(ParusData* original) {
 		return new_parusdata_quote(parusdata_copy(parusdata_unquote(original)));
 
 	else if (original->type == PRIMITIVE_MACRO)
-		return new_parusdata_primitive(original->data.primitve);
+		return new_parusdata_primitive(original->data.primitive);
 
 	else if (original->type == USER_MACRO) {
 		ParusData* mcr 	= calloc(1, sizeof(ParusData));
@@ -308,10 +308,10 @@ ParusData* parusdata_unquote(ParusData* pd) {
 }
 
 /* makes a new parusdata as a primitive macro */ 
-ParusData* new_parusdata_primitive(primitve_t p) {
+ParusData* new_parusdata_primitive(primitive_t p) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
-		pd->data.primitve 	= p;
+		pd->data.primitive 	= p;
 		pd->type 			= PRIMITIVE_MACRO;
 	}
 	return pd;
@@ -581,7 +581,7 @@ static int apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 	}
 
 	else if (pd->type == PRIMITIVE_MACRO) {
-		int result = (*pd->data.primitve)(stk, lex);
+		int result = (*pd->data.primitive)(stk, lex);
 		if (result)
 			fprintf(stderr, "ERROR\n");
 		free_parusdata(pd);
@@ -596,7 +596,7 @@ static int apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 
 
 		// do all the instruction in the macro except the last instruction
-		for (int i = 0; i < pd->data.usermacro.size -0; i++) {
+		for (int i = 0; i < pd->data.usermacro.size -1; i++) {
 			
 			// if not self evaluating instruction than apply it
 			ParusData* instr = pd->data.usermacro.instructions[i];
@@ -604,7 +604,7 @@ static int apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 
 				call_depth++;
 				int e = apply(instr->type == SYMBOL && is_imperative(parusdata_getsymbol(instr)) ? 
-								stack_pull(stk) : instr, 
+								stack_pull(stk) : parusdata_copy(instr), 
 								stk, lex);
 				call_depth--;
 				if (e) {
@@ -618,7 +618,6 @@ static int apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 
 		}
 
-
 		ParusData* last = pd->data.usermacro.instructions[pd->data.usermacro.size -1];
 		
 		ParusData* next_pd = NULL;
@@ -628,7 +627,7 @@ static int apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 			next_pd = parusdata_copy(last);
 
 
-		free_parusdata(pd); // both the macro and the last instruction are deleted
+		free_parusdata(pd);
 
 		pd = next_pd;
 		goto recall;

@@ -48,7 +48,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 typedef long 	integer_t;
 typedef double 	decimal_t;
 
-typedef int (*primitve_t)(void*, void*);
+typedef int (*primitive_t)(void*, void*);
 
 typedef struct {
 	union {
@@ -56,7 +56,7 @@ typedef struct {
 		decimal_t 	decimal;
 		char* 		symbol;
 		void* 		quoted; // pointer to ParusData
-		primitve_t	primitve;
+		primitive_t	primitive;
 
 		struct { 
 			void** 	instructions; //array of ParusData*
@@ -106,7 +106,7 @@ ParusData* 		new_parusdata_symbol(char* s);
 char* 			parusdata_getsymbol(ParusData* pd);
 ParusData* 		new_parusdata_quote(ParusData* quoted);
 ParusData* 		parusdata_unquote(ParusData* pd);
-ParusData* 		new_parusdata_primitive(primitve_t p);
+ParusData* 		new_parusdata_primitive(primitive_t p);
 ParusData* 		new_parusdata_usermacro(char* expr);
 void 			free_parusdata(ParusData* pd);
 void 			print_parusdata(ParusData* pd);
