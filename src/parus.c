@@ -19,9 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "parus.h"
 
 
-static void apply(ParusData* mcr, Stack* stk, Lexicon* lex);
-static void apply_usermacro(ParusData* mcr, Stack* stk, Lexicon* lex);
-static int 	eval(char* expr, Stack* stk, Lexicon* lex);
+static int apply(ParusData* pd, Stack* stk, Lexicon* lex);
+static int eval(char* expr, Stack* stk, Lexicon* lex);
 
 // HELPERS
 // ----------------------------------------------------------------------------------------------------
@@ -95,12 +94,9 @@ static int quote_count(char* s) {
 	return i;
 }
 
-static void clear_buffer(char* buffer) {
-    int i = 0;
-    while (buffer[i] != '\0') {
+static void clear_buffer(char* buffer, int size) {
+	for (int i = 0; i < size || buffer[i] == '\0'; i++) 
         buffer[i] = '\0';
-		i++;
-	}
 }
 
 static int parencount(char* str) {
@@ -408,8 +404,10 @@ the item needs to be freed after usage
 ParusData* stack_pull(Stack* stk) {
 	if (stk->size > 0)
 		return stk->items[--stk->size];
-	else
+	else {
+		fprintf(stderr, "STACK UNDERFLOW\n");
 		return NULL;
+	}
 }
 
 /*
@@ -552,12 +550,18 @@ applies a parusdata
 the function will automatically free pd if needed
 
 */
-static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
+static int apply(ParusData* pd, Stack* stk, Lexicon* lex) {
+	static int call_depth = 0; // stores the call history
 
-	reapply:
+	if (call_depth > MAXIMUM_CALL_DEPTH) {
+		fprintf(stderr, "INSUFFICIENT DATA FOR MEANINGFUL ANSWER\n");
+		return 1;
+	}
 
-	if (pd == NULL)
-		return;
+	recall:
+
+	if (pd == NULL || pd->type == NONE)
+		return 0;
 
 	if (pd->type == INTEGER || pd->type == DECIMAL) 
 		stack_push(stk, pd);
@@ -567,7 +571,7 @@ static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		free_parusdata(pd);
 		pd = binding;
 
-		goto reapply;
+		goto recall;
 	}
 
 	else if (pd->type == QUOTED) {
@@ -583,129 +587,56 @@ static void apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		free_parusdata(pd);
 	}
 
-	else if (pd->type == USER_MACRO) 
-		apply_usermacro(pd, stk, lex);
+	else if (pd->type == USER_MACRO) {
 
-}
-
-/* 
-handles user defined macros
-
-the function will automatically free mcr if needed
-
-An important observion about PARUS BEHAVIOR is that the last call 
-of macro can run in the same call of the original macro.
-
-As such the last instruction in the sequence is optimized.
-
-*/
-static void apply_usermacro(ParusData* mcr, Stack* stk, Lexicon* lex) {
-	static int call_depth = 0; // stores the call history
-
-	if (call_depth > MAXIMUM_CALL_DEPTH) {
-		fprintf(stderr, "INSUFFICIENT DATA FOR MEANINGFUL ANSWER\n");
-		exit(EXIT_FAILURE);
-		return;
-	}
-
-
-	recall:
-
-	if (mcr->data.usermacro.size == 0) {
-		free_parusdata(mcr);
-		return;
-	}
-
-	for (int i = 0; i < mcr->data.usermacro.size -1; i++) {
-		ParusData* instr = mcr->data.usermacro.instructions[i];
-
-		if (instr->type != SYMBOL && instr->type != QUOTED)
-			stack_push(stk, parusdata_copy(instr));
-
-		else if (instr->type == SYMBOL && is_imperative(parusdata_getsymbol(instr))) // if ! symbol
-			apply(stack_pull(stk), stk, lex);
-
-		else {
-			call_depth++;
-			apply(parusdata_copy(instr), stk, lex);
-			call_depth--;
+		if (pd->data.usermacro.size == 0) {
+			free_parusdata(pd);
+			return 0;
 		}
-	}
 
-	
-	ParusData* last = mcr->data.usermacro.instructions[mcr->data.usermacro.size -1];
 
-	if (last->type != SYMBOL && last->type != QUOTED) // self defining forms
-		stack_push(stk, parusdata_copy(last));
-	
-	else if (last->type == QUOTED) // apply quoted
-		apply(parusdata_copy(last), stk, lex);
-		
-	/*
-		This section handles the following cases
-		if last instruction is an imperative form then
-			if top is a symbol and is binded to macro, re-call
-			if top is a macro, re-call
-			else apply 
-		if last instruction is a symbol and is binded to a macro re-call
-		else apply
-	*/
-
-	else {
-		char* name = copy_string(parusdata_getsymbol(last));
-		free_parusdata(mcr);
-		if (is_imperative(name)) { // last instruction is an imperative form
-			// no longer needed
-			free(name);
-
-			ParusData* top = stack_pull(stk);
+		// do all the instruction in the macro except the last instruction
+		for (int i = 0; i < pd->data.usermacro.size -0; i++) {
 			
-			if (top->type == SYMBOL) { // if top is a symbol
-				// get the value it is binded to
-				ParusData* pd = lexicon_get(lex, parusdata_getsymbol(top));
-				free_parusdata(top);
-				// re-call macro
-				if (pd->type == USER_MACRO) {
-					mcr = pd;
-					goto recall;
+			// if not self evaluating instruction than apply it
+			ParusData* instr = pd->data.usermacro.instructions[i];
+			if (instr->type == SYMBOL || instr->type == QUOTED) {
 
-				}
-				// not a macro regular apply
-				else {
-					apply(pd, stk, lex);
-					return; // done
+				call_depth++;
+				int e = apply(instr->type == SYMBOL && is_imperative(parusdata_getsymbol(instr)) ? 
+								stack_pull(stk) : instr, 
+								stk, lex);
+				call_depth--;
+				if (e) {
+					free_parusdata(pd);
+					return 1;
 				}
 			}
 
-			else if (top->type == USER_MACRO) {
-				// re-call macro
-				mcr = top;
-				goto recall;
-			}
+			else 
+				stack_push(stk, parusdata_copy(instr));
 
-			else {
-				apply(top, stk, lex);
-				return; // done
-			}
 		}
-		else {
-			ParusData* pd = lexicon_get(lex, name);
-			free(name);
 
-			// if the last symbol isn't binded to a macro then apply the instruction
-			if (pd->type != USER_MACRO) {
-				apply(pd, stk, lex);
-				return; // done
-			}
-			else {
-				// re-call macro
-				mcr = pd;
-				goto recall;
-			}
-		}
+
+		ParusData* last = pd->data.usermacro.instructions[pd->data.usermacro.size -1];
+		
+		ParusData* next_pd = NULL;
+		if (last->type == SYMBOL && is_imperative(parusdata_getsymbol(last)))
+			next_pd = stack_pull(stk);
+		else 
+			next_pd = parusdata_copy(last);
+
+
+		free_parusdata(pd); // both the macro and the last instruction are deleted
+
+		pd = next_pd;
+		goto recall;
+
 	}
 
-	free_parusdata(mcr);
+	return 0;
+
 }
 
 /* 
@@ -718,7 +649,6 @@ returns 0 only if parsed correctly
 NOT IF OPERATION RAN CORRECTLY
 */
 static int eval(char* expr, Stack* stk, Lexicon* lex) {
-
 	/* pass */
 	if (isspace(expr[0]) || expr[0] == '\0')
 		return 0;
@@ -780,8 +710,9 @@ static int eval(char* expr, Stack* stk, Lexicon* lex) {
 /* The Parus Evaluator */
 void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
 
-	char* buffer = malloc((strlen(input)+1)*sizeof(char));
-	clear_buffer(buffer);
+	int size = (strlen(input) +1);
+	char* buffer = malloc(size * sizeof(char));
+	clear_buffer(buffer, size);
 
 	int i = 0;
 	int j = 0;
@@ -799,7 +730,7 @@ void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
 
 			int e = eval(buffer, stk, lex);
 
-			clear_buffer(buffer);
+			clear_buffer(buffer, size);
 			j = 0;
 			if (e != 0)
 				break;

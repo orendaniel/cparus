@@ -704,6 +704,7 @@ int static help(void* stk, void* lex) {
 
 }
 
+
 Lexicon* predefined_lexicon() {
 	Lexicon* lex = new_lexicon(NULL);
 
