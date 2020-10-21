@@ -126,6 +126,6 @@ ParusData* 	lexicon_get(Lexicon* lex, char* name);
 void 		free_lexicon(Lexicon* lex);
 void 		lexicon_print(Lexicon* lex);
 
-
 void parus_evaluate(char* input, Stack* stk, Lexicon* lex);
+
 #endif

@@ -549,6 +549,8 @@ applies a parusdata
 
 the function will automatically free pd if needed
 
+goto is used to optimize the last call in the macro
+
 */
 static int apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 	static int call_depth = 0; // stores the call history
@@ -567,6 +569,7 @@ static int apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		stack_push(stk, pd);
 	
 	else if (pd->type == SYMBOL) {
+		//printf("%s\n", parusdata_getsymbol(pd));
 		ParusData* binding = lexicon_get(lex, parusdata_getsymbol(pd));
 		free_parusdata(pd);
 		pd = binding;
@@ -675,7 +678,7 @@ static int eval(char* expr, Stack* stk, Lexicon* lex) {
 
 
 	/* imperative form ( that is apply according to the top of the stack ) */
-	else if (is_imperative(expr))
+	else if (is_imperative(expr)) 
 		apply(stack_pull(stk), stk, lex);
 
 
