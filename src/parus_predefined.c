@@ -768,16 +768,18 @@ static int end_case_macro(void* stk, void* lex) {
 
 		ParusData* cond = stack_get_at(stk, index -1);
 		ParusData* doif = stack_get_at(stk, index -2);
+
 		stack_remove_at(stk, index -1);
 		stack_remove_at(stk, index -2);
 
 		parus_apply(cond, stk, lex);
+
 		ParusData* top = stack_pull(stk);
 
 		char act = 0;
-		if (cond->type == INTEGER && parusdata_tointeger(top) != 0)
+		if (top->type == INTEGER && parusdata_tointeger(top) != 0)
 			act = 1;
-		else if (cond->type == DECIMAL && parusdata_todecimal(top) != 0)
+		else if (top->type == DECIMAL && parusdata_todecimal(top) != 0)
 			act = 1;
 
 		free_parusdata(top);
