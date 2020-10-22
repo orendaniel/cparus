@@ -624,6 +624,38 @@ static int drop(void* stk, void* lex) {
 	return 0;
 }
 
+static int setat(void* stk, void* lex) {
+	ParusData* index = stack_pull(stk);
+	ParusData* value = stack_pull(stk);
+
+	if (index == NULL || value == NULL || index->type != INTEGER) {
+		fprintf(stderr, "INVALID PARAMTERS GIVEN TO SETAT\n");
+		free_parusdata(index);
+		free_parusdata(value);
+		return 1;
+
+	}
+
+	Stack* pstk = (Stack*)stk;
+	int i = pstk->size - (parusdata_tointeger(index) +1);
+	if (i < pstk->size && i >= 0) {
+		ParusData* old = pstk->items[i];
+		free_parusdata(old);
+		pstk->items[i] = value;
+		free_parusdata(index);
+	}
+	else {
+		fprintf(stderr, "INDEX OUT OF RANGE\n");
+		free_parusdata(index);
+		free_parusdata(value);
+		return 1;
+	}
+
+
+
+	return 0;
+}
+
 static int stkprint(void* stk, void* lex) {
 	stack_print(stk);
 	return 0;
@@ -753,6 +785,7 @@ Lexicon* predefined_lexicon() {
 	// shortcuts
 	lexicon_define(lex, "DPL", new_parusdata_primitive(&dpl));
 	lexicon_define(lex, "DROP", new_parusdata_primitive(&drop));
+	lexicon_define(lex, "SETAT", new_parusdata_primitive(&setat));
 
 	// debugging
 	lexicon_define(lex, "?stk", new_parusdata_primitive(&stkprint));
