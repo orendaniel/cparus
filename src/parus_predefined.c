@@ -777,9 +777,9 @@ static int end_case_macro(void* stk, void* lex) {
 		ParusData* top = stack_pull(stk);
 
 		char act = 0;
-		if (top->type == INTEGER && parusdata_tointeger(top) != 0)
+		if (top != NULL && top->type == INTEGER && parusdata_tointeger(top) != 0)
 			act = 1;
-		else if (top->type == DECIMAL && parusdata_todecimal(top) != 0)
+		else if (top != NULL && top->type == DECIMAL && parusdata_todecimal(top) != 0)
 			act = 1;
 
 		free_parusdata(top);
@@ -794,7 +794,6 @@ static int end_case_macro(void* stk, void* lex) {
 		index -= 2;
 	}
 	
-
 
 	ParusData* pd = NULL;
 	while ((pd = stack_pull(stk)) != NULL && !equivalent(pd, case_sym)) // strip label
