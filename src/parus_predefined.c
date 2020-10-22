@@ -580,6 +580,12 @@ static int read(void* stk, void* lex) {
 	return 0;
 }
 
+static int getcharacter(void* stk, void* lex) {
+	stack_push(stk, new_parusdata_integer(getc(stdin)));
+
+	return 0;
+}
+
 static int putcharacter(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
 
@@ -594,6 +600,7 @@ static int putcharacter(void* stk, void* lex) {
 
 	return 0;
 }
+
 
 static int dpl(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
@@ -701,7 +708,6 @@ int static now(void* stk, void* lex) {
 int static help(void* stk, void* lex) {
 	printf(HELP_MESSAGE);
 	return 0;
-
 }
 
 
@@ -741,6 +747,7 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "OUT", new_parusdata_primitive(&out));
 	lexicon_define(lex, "OUTLN", new_parusdata_primitive(&outln));
 	lexicon_define(lex, "READ", new_parusdata_primitive(&read));
+	lexicon_define(lex, "GETC", new_parusdata_primitive(&getcharacter));
 	lexicon_define(lex, "PUTC", new_parusdata_primitive(&putcharacter));
 
 	// shortcuts
