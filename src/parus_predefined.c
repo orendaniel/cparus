@@ -23,6 +23,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define READ_BUFFER 128
 
+static char* copy_string(char* s) {
+	int size = 0;
+	while (s[size] != '\0')
+		++size;
+	char* ns = calloc(size, sizeof(char));
+	for (int i = 0; i < size; i++)
+		ns[i] = s[i];
+
+	return ns;
+}
+
 static decimal_t force_decimal(ParusData* pd) {
 	if (pd->type == INTEGER)
 		return (decimal_t)parusdata_tointeger(pd);
@@ -559,14 +570,14 @@ static int read(void* stk, void* lex) {
 	int i = 1;
 
 	char buffer[READ_BUFFER];
-	buffer[0] = '\'';
+	buffer[0] = QUOTE_CHAR;
 
-	while ((c = getc(stdin)) != EOF && c != ';' && i < READ_BUFFER -1) {
+	while ((c = getc(stdin)) != EOF && c != COMMENT_CHAR && i < READ_BUFFER -1) {
 		if (isspace(c)) {
 			buffer[i] = '\0';
 			break;
 		}
-		else if (c != '(' && c != ')' && c != '\'' && c != '!') {
+		else if (c != LP_CHAR && c != RP_CHAR && c != QUOTED && c != IMP_CHAR) {
 			buffer[i] = (char)c;
 			i++;
 		}
@@ -676,7 +687,7 @@ static int for_macro(void* stk, void* lex) {
 	ParusData* sym 	= stack_pull(stk);
 
 	if (fn == NULL || inc == NULL || cmp == NULL || max == NULL || min == NULL || sym == NULL 
-		||inc->type != INTEGER ||
+		|| inc->type != INTEGER ||
 			min->type != INTEGER || max->type != INTEGER ||
 			sym->type != SYMBOL || 
 			!(cmp->type == SYMBOL || cmp->type == USER_MACRO)) {
@@ -697,8 +708,7 @@ static int for_macro(void* stk, void* lex) {
 	while (1) {
 		stack_push(stk, new_parusdata_integer(i));
 		stack_push(stk, parusdata_copy(max));
-		stack_push(stk, parusdata_copy(cmp));
-		parus_evaluate("!", stk, lex);
+		parus_apply(parusdata_copy(cmp), stk, lex);
 
 
 		ParusData* 	cond 		= stack_pull(stk);
@@ -710,8 +720,7 @@ static int for_macro(void* stk, void* lex) {
 		if (cond_int != 0) {
 			lexicon_define(lex, parusdata_getsymbol(sym), new_parusdata_integer(i));
 
-			stack_push(stk, parusdata_copy(fn));
-			parus_evaluate("!", stk, lex);
+			parus_apply(parusdata_copy(fn), stk, lex);
 
 			lexicon_delete(lex, parusdata_getsymbol(sym));
 			i += parusdata_tointeger(inc);		
@@ -729,6 +738,71 @@ static int for_macro(void* stk, void* lex) {
 	free_parusdata(sym);
 	return 0;
 
+}
+
+
+static int end_case_macro(void* stk, void* lex) {
+	Stack* pstk = (Stack*)stk;
+	ParusData* case_sym = new_parusdata_symbol(copy_string("CASE"));
+
+	int index = -1;
+
+	for (int i = pstk->size -1; i >= 0; i--) {
+		if (equivalent(case_sym, pstk->items[i])) {
+			index = i;
+			break;
+		}
+	}
+	if (index < 0) {
+		fprintf(stderr, "NO CASE LABEL FOUND\n");
+		free_parusdata(case_sym);
+		return 1;
+	}
+
+	index = pstk->size - (index +1);
+	ParusData* iftrue = NULL;
+
+	while (index > 0) { 
+		if (index == 1)
+			break;
+
+		ParusData* cond = stack_get_at(stk, index -1);
+		ParusData* doif = stack_get_at(stk, index -2);
+		stack_remove_at(stk, index -1);
+		stack_remove_at(stk, index -2);
+
+		parus_apply(cond, stk, lex);
+		ParusData* top = stack_pull(stk);
+
+		char act = 0;
+		if (cond->type == INTEGER && parusdata_tointeger(top) != 0)
+			act = 1;
+		else if (cond->type == DECIMAL && parusdata_todecimal(top) != 0)
+			act = 1;
+
+		free_parusdata(top);
+
+		if (act) {
+			iftrue = doif;
+			break;
+		}
+		else
+			free_parusdata(doif);
+		
+		index -= 2;
+	}
+	
+
+
+	ParusData* pd = NULL;
+	while ((pd = stack_pull(stk)) != NULL && !equivalent(pd, case_sym)) // strip label
+		free_parusdata(pd);
+	free_parusdata(pd);
+	free_parusdata(case_sym);
+
+	parus_apply(iftrue, stk, lex);
+
+	return 0;
 }
 
 int static now(void* stk, void* lex) {
@@ -793,6 +867,9 @@ Lexicon* predefined_lexicon() {
 
 	// syntatic forms
 	lexicon_define(lex, "FOR", new_parusdata_primitive(&for_macro));
+
+	lexicon_define(lex, "END-CASE", new_parusdata_primitive(&end_case_macro));
+	lexicon_define(lex, "CASE", new_parusdata_quote(new_parusdata_symbol(copy_string("CASE"))));
 
 	// misc
 	lexicon_define(lex, "NOW", new_parusdata_primitive(&now));

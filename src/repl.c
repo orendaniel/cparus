@@ -31,10 +31,10 @@ int parencount(char* str) {
 	int result = 0;
 	int i = 0;
 	while (str[i] != '\0') {
-		if (str[i] == '(' && (str[i +1] == '\0' || isspace(str[i +1])))
+		if (str[i] == LP_CHAR && (str[i +1] == '\0' || isspace(str[i +1])))
 			result++;
 
-		else if (str[i] == ')' && (str[i +1] == '\0' || isspace(str[i +1])))
+		else if (str[i] == RP_CHAR && (str[i +1] == '\0' || isspace(str[i +1])))
 			result--;
 		i++;
 

@@ -44,6 +44,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	"Copyright (C) 2020  Oren Daniel\n" \
 	"Type ?help macro for help, or in the command line enter 'parus -help.'\n\n"
 
+#define LP_CHAR 		'('
+#define RP_CHAR 		')'
+#define QUOTE_CHAR 		'\''
+#define IMP_CHAR 		'!'
+#define COMMENT_CHAR 	';'
+
 
 typedef long 	integer_t;
 typedef double 	decimal_t;
@@ -126,6 +132,7 @@ ParusData* 	lexicon_get(Lexicon* lex, char* name);
 void 		free_lexicon(Lexicon* lex);
 void 		lexicon_print(Lexicon* lex);
 
-void parus_evaluate(char* input, Stack* stk, Lexicon* lex);
+int 	parus_apply(ParusData* pd, Stack* stk, Lexicon* lex);
+void 	parus_evaluate(char* input, Stack* stk, Lexicon* lex);
 
 #endif

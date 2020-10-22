@@ -19,7 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "parus.h"
 
 
-static int apply(ParusData* pd, Stack* stk, Lexicon* lex);
 static int eval(char* expr, Stack* stk, Lexicon* lex);
 
 // HELPERS
@@ -37,11 +36,11 @@ static char* copy_string(char* s) {
 }
 
 static char is_usermacro(char* s) {
-	return s[0] == '(' && (s[1] == '\0' || isspace(s[1]));
+	return s[0] == LP_CHAR && (s[1] == '\0' || isspace(s[1]));
 }
 
 static char is_termination(char* s) {
-	return s[0] == ')' && (s[1] == '\0' || isspace(s[1]));
+	return s[0] == RP_CHAR && (s[1] == '\0' || isspace(s[1]));
 }
 
 static char is_integer(char* s) {
@@ -61,15 +60,15 @@ static char is_decimal(char* s) {
 }
 
 static char is_imperative(char* s) {
-	return s[0] == '!' && (s[1] == '\0' || isspace(s[1]));
+	return s[0] == IMP_CHAR && (s[1] == '\0' || isspace(s[1]));
 }
 
 static char is_quoted(char* s) {
-	return s[0] == '\'';
+	return s[0] == QUOTE_CHAR;
 }
 
 static ParusData* quotate_symbol(char* expr) {
-	if (expr[1] != '\'')
+	if (expr[1] != QUOTE_CHAR)
 		return new_parusdata_symbol(copy_string(expr +1));
 	else
 		return new_parusdata_quote(quotate_symbol(expr +1));
@@ -89,7 +88,7 @@ static char is_symbol(char* s) {
 
 static int quote_count(char* s) {
 	int i = 0;
-	while (s[i] == '\'' && s[i] != '\0')
+	while (s[i] == QUOTE_CHAR && s[i] != '\0')
 		i++;
 	return i;
 }
@@ -185,8 +184,10 @@ static ParusData* make_usermacro(char* expr) {
 			else if (is_decimal(token))
 				insert_instruction(pd, new_parusdata_decimal(atof(token)));
 
-			else if (is_imperative(token)) // imperative is implementated as a symbol
-				insert_instruction(pd, new_parusdata_symbol(copy_string("!")));
+			else if (is_imperative(token)) { // imperative is implementated as a symbol
+				char imp_expr[2] = {IMP_CHAR, '\0'};
+				insert_instruction(pd, new_parusdata_symbol(copy_string(imp_expr)));
+			}
 
 			else if (is_quoted(token) && is_symbol(token + quote_count(token)))
 				insert_instruction(pd, new_parusdata_quote(quotate_symbol(token)));
@@ -357,7 +358,7 @@ void print_parusdata(ParusData* pd) {
 		printf("%s", parusdata_getsymbol(pd));
 
 	else if (pd->type == QUOTED) {
-		printf("'");
+		printf("%c", QUOTE_CHAR);
 		print_parusdata(parusdata_unquote(pd));
 	}
 
@@ -552,7 +553,7 @@ the function will automatically free pd if needed
 goto is used to optimize the last call in the macro
 
 */
-static int apply(ParusData* pd, Stack* stk, Lexicon* lex) {
+int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 	static int call_depth = 0; // stores the call history
 
 	if (call_depth > MAXIMUM_CALL_DEPTH) {
@@ -606,7 +607,7 @@ static int apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 			if (instr->type == SYMBOL || instr->type == QUOTED) {
 
 				call_depth++;
-				int e = apply(instr->type == SYMBOL && is_imperative(parusdata_getsymbol(instr)) ? 
+				int e = parus_apply(instr->type == SYMBOL && is_imperative(parusdata_getsymbol(instr)) ? 
 								stack_pull(stk) : parusdata_copy(instr), 
 								stk, lex);
 				call_depth--;
@@ -679,7 +680,7 @@ static int eval(char* expr, Stack* stk, Lexicon* lex) {
 
 	/* imperative form ( that is apply according to the top of the stack ) */
 	else if (is_imperative(expr)) 
-		apply(stack_pull(stk), stk, lex);
+		parus_apply(stack_pull(stk), stk, lex);
 
 
 	/* quoted forms */
@@ -697,7 +698,7 @@ static int eval(char* expr, Stack* stk, Lexicon* lex) {
 	/* apply for given symbol */
 	else if (is_symbol(expr)) {
 		ParusData* pd = lexicon_get(lex, expr);
-		apply(pd, stk, lex);
+		parus_apply(pd, stk, lex);
 	}
 
 	else {
@@ -722,7 +723,7 @@ void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
 
 	while ((c = input[i++]) != '\0') {
 
-		if (c == ';') { // comment skip to next line
+		if (c == COMMENT_CHAR) { // comment skip to next line
 			buffer[j] = ' ';
 			while ((c = input[++i]) != '\n' && c != '\0');
 		} 
