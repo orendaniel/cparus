@@ -16,13 +16,42 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <readline/readline.h>
-#include <readline/history.h>
+#define TEXT_BUFFER 1024
 
 #include "parus.h"
 #include "parus_predefined.h"
 
-#define TEXT_BUFFER_GROWTH 1024
+
+
+#ifdef USE_READLINE
+
+#include <readline/readline.h>
+#include <readline/history.h>
+
+#endif
+
+#ifndef USE_READLINE
+
+/* a replacement for gnu readlie */
+char* readline(const char* prompt) { 
+	char* line = malloc(TEXT_BUFFER * sizeof(char));
+
+	if (line == NULL)
+		return NULL;
+
+	printf("%s", prompt);
+
+	if (fgets(line, TEXT_BUFFER, stdin) != NULL)
+		return line;
+	else {
+		free(line);
+		return NULL;
+	}
+
+}
+
+#endif
+
 
 
 // copied from parus.c
@@ -43,7 +72,7 @@ int parencount(char* str) {
 
 char* read_file(FILE* f) {
 	int 	size 	= 0;
-	int 	max 	= TEXT_BUFFER_GROWTH;
+	int 	max 	= TEXT_BUFFER;
 	char* 	text 	= calloc(max, sizeof(char));
 
 	int c = 0;
@@ -51,14 +80,54 @@ char* read_file(FILE* f) {
 		if (size != max - 1) 
 			text[size++] = c;
 		else {
-			text = realloc(text, (max + TEXT_BUFFER_GROWTH) * sizeof(char));
+			text = realloc(text, (max + TEXT_BUFFER) * sizeof(char));
 			if (text != 0) {
-				max += TEXT_BUFFER_GROWTH;
+				max += TEXT_BUFFER;
 				text[size++] = c;
 			}
 		}
 	}
 	return text;
+}
+
+char* repl_read() {
+	char* input = readline("CParus> ");
+	
+	#ifdef USE_READLINE
+	add_history(input);
+	#endif
+
+	if (!input)
+		return NULL;
+
+	while (parencount(input) > 0) {
+		char* addition = readline("... ");
+
+		#ifdef USE_READLINE
+		add_history(input);
+		#endif
+
+		if (!addition)
+			return NULL;
+
+		int input_len 		= strlen(input) +1;
+		int addition_len 	= strlen(addition) +1;
+
+		input = realloc(input, input_len + addition_len);
+
+		if (input == NULL) {
+			printf("Cannot read command\n");
+			exit(EXIT_FAILURE);
+		}
+
+		input[input_len-1] = ' '; // replace \0 with a space
+		for (int i = 0; i < addition_len; i++) 
+			input[input_len +i] = addition[i];
+
+		free(addition);
+	}
+
+	return input;
 
 }
 
@@ -106,36 +175,7 @@ int main(int argc, char** argv) {
 
 	while (!norepl) {
 		
-		char* input = readline("CParus> ");
-
-		add_history(input);
-		if (!input)
-			break;
-
-		while (parencount(input) > 0) {
-			char* addition = readline("... ");
-			add_history(addition);
-			if (!addition)
-				goto break_main_loop;
-
-
-			int input_len 		= strlen(input) +1;
-			int addition_len 	= strlen(addition) +1;
-
-			input = realloc(input, input_len + addition_len);
-
-			if (input == NULL) {
-				printf("Cannot read command\n");
-				exit(EXIT_FAILURE);
-			}
-
-			input[input_len-1] = ' '; // replace \0 with space
-			for (int i = 0; i < addition_len; i++) 
-				input[input_len +i] = addition[i];
-
-			free(addition);
-		}
-
+		char* input = repl_read();
 
 		parus_evaluate(input, stk, lex);
 		
