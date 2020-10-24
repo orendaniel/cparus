@@ -177,11 +177,13 @@ int main(int argc, char** argv) {
 		
 		char* input = repl_read();
 
+		if (input == NULL)
+			break;
+
 		parus_evaluate(input, stk, lex);
 		
 		free(input);
 	}
-	break_main_loop:
 
 	free_stack(stk);
 	free_lexicon(lex);
