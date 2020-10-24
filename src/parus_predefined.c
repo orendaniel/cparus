@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define READ_BUFFER 128
 
+/* copied from parus.c */
 static char* copy_string(char* s) {
 	int size = 0;
 	while (s[size] != '\0')
@@ -33,6 +34,23 @@ static char* copy_string(char* s) {
 
 	return ns;
 }
+
+char is_integer(char* s) {
+	if (s == NULL || *s == '\0' || isspace(*s))
+	  return 0;
+	char * p;
+	strtol(s, &p, 10);
+	return *p == '\0';
+}
+
+char is_decimal(char* s) {
+	if (s == NULL || *s == '\0' || isspace(*s)) 
+	  return 0;
+	char * p;
+	strtod(s, &p);
+	return *p == '\0';
+}
+
 
 static decimal_t force_decimal(ParusData* pd) {
 	if (pd->type == INTEGER)
@@ -548,23 +566,6 @@ static int outln(void* stk, void* lex) {
 }
 
 static int read(void* stk, void* lex) {
-
-	/* copied from parus.c */
-	char is_integer(char* s) {
-		if (s == NULL || *s == '\0' || isspace(*s))
-		  return 0;
-		char * p;
-		strtol(s, &p, 10);
-		return *p == '\0';
-	}
-
-	char is_decimal(char* s) {
-		if (s == NULL || *s == '\0' || isspace(*s)) 
-		  return 0;
-		char * p;
-		strtod(s, &p);
-		return *p == '\0';
-	}
 
 	int c;
 	int i = 1;
