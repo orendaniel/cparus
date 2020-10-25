@@ -25,6 +25,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string.h>
 #include <ctype.h>
 
+#define LP_CHAR 		'('
+#define RP_CHAR 		')'
+#define QUOTE_CHAR 		'\''
+#define IMP_CHAR 		'!'
+#define COMMENT_CHAR 	';'
 
 #define STACK_GROWTH 	50
 #define LEXICON_GROWTH 	50
@@ -44,11 +49,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	"Copyright (C) 2020  Oren Daniel\n" \
 	"Type ?help macro for help, or in the command line enter 'parus -help.'\n\n"
 
-#define LP_CHAR 		'('
-#define RP_CHAR 		')'
-#define QUOTE_CHAR 		'\''
-#define IMP_CHAR 		'!'
-#define COMMENT_CHAR 	';'
 
 
 typedef long 	integer_t;
