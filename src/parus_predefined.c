@@ -23,18 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define READ_BUFFER 128
 
-/* copied from parus.c */
-static char* copy_string(char* s) {
-	int size = 0;
-	while (s[size] != '\0')
-		++size;
-	char* ns = calloc(size, sizeof(char));
-	for (int i = 0; i < size; i++)
-		ns[i] = s[i];
-
-	return ns;
-}
-
 char is_integer(char* s) {
 	if (s == NULL || *s == '\0' || isspace(*s))
 	  return 0;
@@ -50,7 +38,6 @@ char is_decimal(char* s) {
 	strtod(s, &p);
 	return *p == '\0';
 }
-
 
 static decimal_t force_decimal(ParusData* pd) {
 	if (pd->type == INTEGER)
@@ -744,7 +731,7 @@ static int for_macro(void* stk, void* lex) {
 
 static int end_case_macro(void* stk, void* lex) {
 	Stack* pstk = (Stack*)stk;
-	ParusData* case_sym = new_parusdata_symbol(copy_string("CASE"));
+	ParusData* case_sym = new_parusdata_litsymbol("CASE");
 
 	int index = -1;
 
@@ -871,7 +858,7 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "FOR", new_parusdata_primitive(&for_macro));
 
 	lexicon_define(lex, "END-CASE", new_parusdata_primitive(&end_case_macro));
-	lexicon_define(lex, "CASE", new_parusdata_quote(new_parusdata_symbol(copy_string("CASE"))));
+	lexicon_define(lex, "CASE", new_parusdata_quote(new_parusdata_litsymbol("CASE")));
 
 	// misc
 	lexicon_define(lex, "NOW", new_parusdata_primitive(&now));
