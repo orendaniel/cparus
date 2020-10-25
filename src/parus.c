@@ -147,9 +147,6 @@ static ParusData* make_usermacro(char* expr) {
 
 	if (mcrstk == NULL) {
 		fprintf(stderr, "CANNOT ALLOCATE MACRO\n");
-		if (mcrstk != NULL)
-			free_stack(mcrstk);
-
 		return NULL;
 	}
 	

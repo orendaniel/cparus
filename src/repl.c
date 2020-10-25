@@ -21,8 +21,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "parus.h"
 #include "parus_predefined.h"
 
-
-
 #ifdef USE_READLINE
 
 #include <readline/readline.h>
