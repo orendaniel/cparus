@@ -634,7 +634,7 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		free_parusdata(pd);
 
 		pd = next_pd;
-		if (pd != NULL && pd->type != USER_MACRO && pd->type != PRIMITIVE_MACRO)
+		if (pd != NULL && (pd->type == SYMBOL || pd->type == QUOTED))
 			goto recall;
 		else
 			stack_push(stk, pd);
