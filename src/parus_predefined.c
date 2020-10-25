@@ -794,19 +794,19 @@ static int end_case_macro(void* stk, void* lex) {
 	return 0;
 }
 
-int static now(void* stk, void* lex) {
+static int now(void* stk, void* lex) {
 	stack_push((Stack*)stk, new_parusdata_decimal((decimal_t)clock()/CLOCKS_PER_SEC));
 	return 0;
 
 }
 
-int static quit(void* stk, void* lex) {
+static int quit(void* stk, void* lex) {
 	exit(EXIT_SUCCESS);
 	return 0;
 
 }
 
-int static help(void* stk, void* lex) {
+static int help(void* stk, void* lex) {
 	printf(HELP_MESSAGE);
 	return 0;
 }
