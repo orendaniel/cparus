@@ -54,22 +54,6 @@ char* readline(const char* prompt) {
 
 
 
-// copied from parus.c
-int parencount(char* str) {
-	int result = 0;
-	int i = 0;
-	while (str[i] != '\0') {
-		if (str[i] == LP_CHAR && (str[i +1] == '\0' || isspace(str[i +1])))
-			result++;
-
-		else if (str[i] == RP_CHAR && (str[i +1] == '\0' || isspace(str[i +1])))
-			result--;
-		i++;
-
-	}   
-	return result;
-}
-
 char* read_file(FILE* f) {
 	int 	size 	= 0;
 	int 	max 	= TEXT_BUFFER;
@@ -100,7 +84,7 @@ char* repl_read() {
 	if (!input)
 		return NULL;
 
-	while (parencount(input) > 0) {
+	while (is_valid_parus_expression(input) > 0) {
 		char* addition = readline("... ");
 
 		#ifdef USE_READLINE

@@ -19,8 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "parus.h"
 
 
-static int eval(char* expr, Stack* stk, Lexicon* lex);
-
 // HELPERS
 // ----------------------------------------------------------------------------------------------------
 
@@ -98,20 +96,6 @@ static void clear_buffer(char* buffer, int size) {
         buffer[i] = '\0';
 }
 
-static int parencount(char* str) {
-	int result = 0;
-	int i = 0;
-	while (str[i] != '\0') {
-		if (is_usermacro(str +i)) 
-			result++;
-
-		else if (is_termination(str +i))
-			result--;
-		i++;
-
-	}   
-	return result;
-}
 
 /* inserts an instruction to a mcr */
 static void insert_instruction(ParusData* mcr, ParusData* instr) {
@@ -134,6 +118,19 @@ static void insert_instruction(ParusData* mcr, ParusData* instr) {
 	}
 }
 
+static ParusData* init_macro() {
+	ParusData* 	mcr 	= calloc(1, sizeof(ParusData));
+
+	if (mcr != NULL) {
+		mcr->data.usermacro.instructions 	= calloc(USER_MACRO_INSTR_GROWTH, sizeof(ParusData));
+		mcr->data.usermacro.max 			= USER_MACRO_INSTR_GROWTH;
+		mcr->data.usermacro.size 			= 0;
+		mcr->type 							= USER_MACRO;
+	}
+
+	return mcr;
+}
+
 /*
 make a new parusdata as usermacro
 A usermacro is represented by a list of ParusData that are evaluated sequentially
@@ -143,74 +140,154 @@ Example: DPL * )
 expr must be mutable
 */
 static ParusData* make_usermacro(char* expr) {
-	ParusData* pd = calloc(1, sizeof(ParusData));
-	if (pd != NULL) {
-		pd->data.usermacro.instructions 	= calloc(USER_MACRO_INSTR_GROWTH, sizeof(ParusData));
-		pd->data.usermacro.max 				= USER_MACRO_INSTR_GROWTH;
-		pd->data.usermacro.size 			= 0;
-		pd->type = USER_MACRO;
+	Stack* 	mcrstk 		= new_stack(); // a stack to store external macros
+	char* 	token 		= strtok(expr, " ");
+	char 	terminated 	= 0;
+
+
+	if (mcrstk == NULL) {
+		fprintf(stderr, "CANNOT ALLOCATE MACRO\n");
+		if (mcrstk != NULL)
+			free_stack(mcrstk);
+
+		return NULL;
+	}
+	
+	stack_push(mcrstk, init_macro());
+
+	while (token != NULL) {
 		
-		// variables to store the "car" and "cdr" of the string expr
-		static char* token; 
-		static char* rest;
-		rest = expr;
+		if (mcrstk->size == 0)
+			break;
 
-		char terminated = 0;
+		ParusData* mcr = mcrstk->items[mcrstk->size -1];
 
-		while ((token = strtok_r(rest, " ", &rest))) {
+		if (is_usermacro(token))
+			stack_push(mcrstk, init_macro());
+			
+		else if (is_termination(token)) {
+			if (mcrstk->size > 1) {
+				ParusData* internal = stack_pull(mcrstk);
+				ParusData* external = stack_pull(mcrstk);
 
-			if (is_usermacro(token)) {
-				ParusData* submcr = make_usermacro(rest);
+				insert_instruction(external, internal);
 
-				if (submcr == NULL) {
-					free_parusdata(submcr);
-					goto unterminated;
-				}
-
-				insert_instruction(pd, submcr);
-				continue; // continue to next token
-
+				stack_push(mcrstk, external);
 			}
-				
-			else if (is_termination(token)) {
+			else {
 				terminated = 1;
 				break;
 			}
 
-
-			else if (is_integer(token))
-				insert_instruction(pd, new_parusdata_integer(atoi(token)));
-
-			else if (is_decimal(token))
-				insert_instruction(pd, new_parusdata_decimal(atof(token)));
-
-			else if (is_imperative(token)) { // imperative is implementated as a symbol
-				char imp_expr[2] = {IMP_CHAR, '\0'};
-				insert_instruction(pd, new_parusdata_symbol(imp_expr));
-			}
-
-			else if (is_quoted(token) && is_symbol(token + quote_count(token)))
-				insert_instruction(pd, new_parusdata_quote(quotate_symbol(token)));
-
-			else if (is_symbol(token))
-				insert_instruction(pd, new_parusdata_symbol(token));
-
-			else {
-				fprintf(stderr, "INVALID TOKEN IN USER DEFINED MACRO - %s\n", expr);
-				free_parusdata(pd);
-				return NULL;
-			}
 		}
-		
-		if (!terminated) {
-			fprintf(stderr, "UN-TERMINATED MACRO\n"); // print error only once
-			unterminated:
-			free_parusdata(pd);
+
+
+		else if (is_integer(token))
+			insert_instruction(mcr, new_parusdata_integer(atoi(token)));
+
+		else if (is_decimal(token))
+			insert_instruction(mcr, new_parusdata_decimal(atof(token)));
+
+		else if (is_imperative(token)) { // imperative is implementated as a symbol
+			char imp_expr[2] = {IMP_CHAR, '\0'};
+			insert_instruction(mcr, new_parusdata_symbol(imp_expr));
+		}
+
+		else if (is_quoted(token) && is_symbol(token + quote_count(token)))
+			insert_instruction(mcr, new_parusdata_quote(quotate_symbol(token)));
+
+		else if (is_symbol(token))
+			insert_instruction(mcr, new_parusdata_symbol(token));
+
+		else {
+			fprintf(stderr, "INVALID TOKEN IN USER DEFINED MACRO - %s\n", expr);
+			free_stack(mcrstk);
 			return NULL;
+		}
+
+		token = strtok(NULL, " ");
+	}
+		
+	if (!terminated) {
+		fprintf(stderr, "UN-TERMINATED MACRO\n");
+		free_stack(mcrstk);
+		return NULL;
+	}
+
+
+	ParusData* pd = stack_pull(mcrstk);
+
+	free_stack(mcrstk);
+
+	return pd;
+}
+
+/* 
+
+Evaluates a single expression at a time, not including comments
+
+pass only mutable strings to eval as this function mutates the string
+
+returns 0 only if parsed correctly
+NOT IF OPERATION RAN CORRECTLY
+*/
+static int eval(char* expr, Stack* stk, Lexicon* lex) {
+	/* pass */
+	if (isspace(expr[0]) || expr[0] == '\0')
+		return 0;
+
+	/* validate syntax */
+	if (is_termination(expr)) {
+		fprintf(stderr, "EXPECTED MACRO\n");
+		return 1;
+	}
+
+	/* self evaluating forms */
+	if (is_usermacro(expr)) {
+		ParusData* mcr = new_parusdata_usermacro(expr);
+		if (mcr == NULL)
+			return 0;
+		stack_push(stk, mcr);
+
+	}
+
+	else if (is_integer(expr)) 
+		stack_push(stk, new_parusdata_integer(atoi(expr)));
+
+	else if (is_decimal(expr))
+		stack_push(stk, new_parusdata_decimal(atof(expr)));
+
+
+	/* imperative form ( that is apply according to the top of the stack ) */
+	else if (is_imperative(expr)) 
+		parus_apply(stack_pull(stk), stk, lex);
+
+
+	/* quoted forms */
+	else if (is_quoted(expr)) {
+		if (is_symbol(expr + quote_count(expr)))
+			stack_push(stk, quotate_symbol(expr));
+
+		else {
+			fprintf(stderr, "INVALID QUOTATION FORM - %s\n", expr);
+			return 1;
 		}
 	}
 
-	return pd;
+
+	/* apply for given symbol */
+	else if (is_symbol(expr)) {
+		ParusData* pd = lexicon_get(lex, expr);
+		parus_apply(pd, stk, lex);
+	}
+
+	else {
+		fprintf(stderr, "SYNTAX ERROR - %s\n", expr);
+		return 1;
+
+	} 
+
+	return 0;
 }
 
 // PARUSDATA
@@ -545,6 +622,28 @@ void lexicon_print(Lexicon* lex) {
 // EVALUATOR
 // ----------------------------------------------------------------------------------------------------
 
+/* 
+	returns if the evaluator can call the expression by returning the parenthesis count
+
+	if result > 0 unterminated expression
+	if result = 0 valid expression
+	if result < 0 overterminated expression
+*/
+int is_valid_parus_expression(char* str) {
+	int result = 0;
+	int i = 0;
+	while (str[i] != '\0') {
+		if (is_usermacro(str +i)) 
+			result++;
+
+		else if (is_termination(str +i))
+			result--;
+		i++;
+
+	}   
+	return result;
+}
+
 /*
 applies a parusdata 
 
@@ -570,7 +669,6 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		stack_push(stk, pd);
 	
 	else if (pd->type == SYMBOL) {
-		//printf("%s\n", parusdata_getsymbol(pd));
 		ParusData* binding = lexicon_get(lex, parusdata_getsymbol(pd));
 		free_parusdata(pd);
 		pd = binding;
@@ -622,11 +720,14 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 
 		}
 
-		ParusData* last = pd->data.usermacro.instructions[pd->data.usermacro.size -1];
-		
-		ParusData* next_pd = NULL;
-		if (last != NULL && last->type == SYMBOL && is_imperative(parusdata_getsymbol(last)))
+		ParusData* 	last 	= pd->data.usermacro.instructions[pd->data.usermacro.size -1];
+		ParusData* 	next_pd	= NULL;
+		char 		impcall = 0;
+
+		if (last != NULL && last->type == SYMBOL && is_imperative(parusdata_getsymbol(last))) {
 			next_pd = stack_pull(stk);
+			impcall = 1;
+		}
 		else 
 			next_pd = parusdata_copy(last);
 
@@ -634,7 +735,7 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		free_parusdata(pd);
 
 		pd = next_pd;
-		if (pd != NULL && (pd->type == SYMBOL || pd->type == QUOTED))
+		if (pd != NULL && (pd->type == SYMBOL || pd->type == QUOTED || impcall))
 			goto recall;
 		else
 			stack_push(stk, pd);
@@ -645,73 +746,6 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 
 }
 
-/* 
-
-Evaluates a single expression at a time, not including comments
-
-pass only mutable strings to eval as this function mutates the string
-
-returns 0 only if parsed correctly
-NOT IF OPERATION RAN CORRECTLY
-*/
-static int eval(char* expr, Stack* stk, Lexicon* lex) {
-	/* pass */
-	if (isspace(expr[0]) || expr[0] == '\0')
-		return 0;
-
-	/* validate syntax */
-	if (is_termination(expr)) {
-		fprintf(stderr, "EXPECTED MACRO\n");
-		return 1;
-	}
-
-	/* self evaluating forms */
-	if (is_usermacro(expr)) {
-		ParusData* mcr = new_parusdata_usermacro(expr);
-		if (mcr == NULL)
-			return 0;
-		stack_push(stk, mcr);
-
-	}
-
-	else if (is_integer(expr)) 
-		stack_push(stk, new_parusdata_integer(atoi(expr)));
-
-	else if (is_decimal(expr))
-		stack_push(stk, new_parusdata_decimal(atof(expr)));
-
-
-	/* imperative form ( that is apply according to the top of the stack ) */
-	else if (is_imperative(expr)) 
-		parus_apply(stack_pull(stk), stk, lex);
-
-
-	/* quoted forms */
-	else if (is_quoted(expr)) {
-		if (is_symbol(expr + quote_count(expr)))
-			stack_push(stk, quotate_symbol(expr));
-
-		else {
-			fprintf(stderr, "INVALID QUOTATION FORM - %s\n", expr);
-			return 1;
-		}
-	}
-
-
-	/* apply for given symbol */
-	else if (is_symbol(expr)) {
-		ParusData* pd = lexicon_get(lex, expr);
-		parus_apply(pd, stk, lex);
-	}
-
-	else {
-		fprintf(stderr, "SYNTAX ERROR - %s\n", expr);
-		return 1;
-
-	} 
-
-	return 0;
-}
 
 /* The Parus Evaluator */
 void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
@@ -731,7 +765,7 @@ void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
 			while ((c = input[++i]) != '\n' && c != '\0');
 		} 
 
-		else if (isspace(c) && parencount(buffer) <= 0) { // if balanced expression
+		else if (isspace(c) && is_valid_parus_expression(buffer) <= 0) { // if balanced expression
 			buffer[j] = '\0';
 
 			int e = eval(buffer, stk, lex);
@@ -755,3 +789,4 @@ void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
 	
 	free(buffer);
 }
+
