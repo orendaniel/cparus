@@ -813,7 +813,7 @@ static int help(void* stk, void* lex) {
 
 
 Lexicon* predefined_lexicon() {
-	Lexicon* lex = new_lexicon(NULL);
+	Lexicon* lex = new_lexicon();
 
 	// basic
 	lexicon_define(lex, "DEF", new_parusdata_primitive(&define));
