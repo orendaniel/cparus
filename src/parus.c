@@ -132,7 +132,7 @@ static ParusData* init_macro() {
 }
 
 /*
-make a new parusdata as usermacro
+make a new parusdata as a usermacro
 A usermacro is represented by a list of ParusData that are evaluated sequentially
 
 expr is the textual representation of the macro with the openning emitted sense it is unneeded 
@@ -727,7 +727,6 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		}
 		else 
 			next_pd = parusdata_copy(last);
-
 
 		free_parusdata(pd);
 
