@@ -625,7 +625,7 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		ParusData* last = pd->data.usermacro.instructions[pd->data.usermacro.size -1];
 		
 		ParusData* next_pd = NULL;
-		if (last->type == SYMBOL && is_imperative(parusdata_getsymbol(last)))
+		if (last != NULL && last->type == SYMBOL && is_imperative(parusdata_getsymbol(last)))
 			next_pd = stack_pull(stk);
 		else 
 			next_pd = parusdata_copy(last);
@@ -634,7 +634,10 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		free_parusdata(pd);
 
 		pd = next_pd;
-		goto recall;
+		if (pd != NULL && pd->type != USER_MACRO && pd->type != PRIMITIVE_MACRO)
+			goto recall;
+		else
+			stack_push(stk, pd);
 
 	}
 
