@@ -800,6 +800,12 @@ int static now(void* stk, void* lex) {
 
 }
 
+int static quit(void* stk, void* lex) {
+	exit(EXIT_SUCCESS);
+	return 0;
+
+}
+
 int static help(void* stk, void* lex) {
 	printf(HELP_MESSAGE);
 	return 0;
@@ -862,6 +868,7 @@ Lexicon* predefined_lexicon() {
 
 	// misc
 	lexicon_define(lex, "NOW", new_parusdata_primitive(&now));
+	lexicon_define(lex, "QUIT", new_parusdata_primitive(&quit));
 
 	lexicon_define(lex, "?help", new_parusdata_primitive(&help));
 
