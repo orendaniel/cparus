@@ -731,7 +731,7 @@ static int for_macro(void* stk, void* lex) {
 
 static int end_case_macro(void* stk, void* lex) {
 	Stack* pstk = (Stack*)stk;
-	ParusData* case_sym = new_parusdata_litsymbol("CASE");
+	ParusData* case_sym = new_parusdata_symbol("CASE");
 
 	int index = -1;
 
@@ -858,7 +858,7 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "FOR", new_parusdata_primitive(&for_macro));
 
 	lexicon_define(lex, "END-CASE", new_parusdata_primitive(&end_case_macro));
-	lexicon_define(lex, "CASE", new_parusdata_quote(new_parusdata_litsymbol("CASE")));
+	lexicon_define(lex, "CASE", new_parusdata_quote(new_parusdata_symbol("CASE")));
 
 	// misc
 	lexicon_define(lex, "NOW", new_parusdata_primitive(&now));

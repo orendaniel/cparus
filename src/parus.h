@@ -109,7 +109,6 @@ integer_t 		parusdata_tointeger(ParusData* pd);
 ParusData* 		new_parusdata_decimal(decimal_t d);
 decimal_t 		parusdata_todecimal(ParusData* pd);
 ParusData* 		new_parusdata_symbol(char* s);
-ParusData* 		new_parusdata_litsymbol(char* s);
 char* 			parusdata_getsymbol(ParusData* pd);
 ParusData* 		new_parusdata_quote(ParusData* quoted);
 ParusData* 		parusdata_unquote(ParusData* pd);

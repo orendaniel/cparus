@@ -69,7 +69,7 @@ static char is_quoted(char* s) {
 
 static ParusData* quotate_symbol(char* expr) {
 	if (expr[1] != QUOTE_CHAR)
-		return new_parusdata_litsymbol(expr +1);
+		return new_parusdata_symbol(expr +1);
 	else
 		return new_parusdata_quote(quotate_symbol(expr +1));
 }
@@ -186,14 +186,14 @@ static ParusData* make_usermacro(char* expr) {
 
 			else if (is_imperative(token)) { // imperative is implementated as a symbol
 				char imp_expr[2] = {IMP_CHAR, '\0'};
-				insert_instruction(pd, new_parusdata_litsymbol(imp_expr));
+				insert_instruction(pd, new_parusdata_symbol(imp_expr));
 			}
 
 			else if (is_quoted(token) && is_symbol(token + quote_count(token)))
 				insert_instruction(pd, new_parusdata_quote(quotate_symbol(token)));
 
 			else if (is_symbol(token))
-				insert_instruction(pd, new_parusdata_litsymbol(token));
+				insert_instruction(pd, new_parusdata_symbol(token));
 
 			else {
 				fprintf(stderr, "INVALID TOKEN IN USER DEFINED MACRO - %s\n", expr);
@@ -225,7 +225,7 @@ ParusData* parusdata_copy(ParusData* original) {
 		return new_parusdata_decimal(parusdata_todecimal(original));
 
 	else if (original->type == SYMBOL)
-		return new_parusdata_litsymbol(parusdata_getsymbol(original));
+		return new_parusdata_symbol(parusdata_getsymbol(original));
 
 	else if (original->type == QUOTED)
 		return new_parusdata_quote(parusdata_copy(parusdata_unquote(original)));
@@ -282,14 +282,10 @@ decimal_t parusdata_todecimal(ParusData* pd) {
 ParusData* new_parusdata_symbol(char* s) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
-		pd->data.symbol 	= s;
+		pd->data.symbol 	= copy_string(s);
 		pd->type 			= SYMBOL;
 	}
 	return pd;
-}
-
-ParusData* new_parusdata_litsymbol(char* s) {
-	return new_parusdata_symbol(copy_string(s));
 }
 
 /* returns a symbol */
