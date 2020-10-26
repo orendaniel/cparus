@@ -23,17 +23,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define READ_BUFFER 128
 
-char is_integer(char* s) {
+static char is_integer(char* s) {
 	if (s == NULL || *s == '\0' || isspace(*s))
-	  return 0;
-	char * p;
+		return 0;
+	char* p;
 	strtol(s, &p, 10);
 	return *p == '\0';
 }
 
-char is_decimal(char* s) {
+static char is_decimal(char* s) {
 	if (s == NULL || *s == '\0' || isspace(*s)) 
-	  return 0;
+		return 0;
 	char * p;
 	strtod(s, &p);
 	return *p == '\0';

@@ -42,19 +42,19 @@ static char is_termination(char* s) {
 }
 
 static char is_integer(char* s) {
-    if (s == NULL || *s == '\0' || isspace(*s))
-      return 0;
-    char * p;
-    strtol(s, &p, 10);
-    return *p == '\0';
+	if (s == NULL || *s == '\0' || isspace(*s))
+		return 0;
+	char* p;
+	strtol(s, &p, 10);
+	return *p == '\0';
 }
 
 static char is_decimal(char* s) {
-    if (s == NULL || *s == '\0' || isspace(*s)) 
-      return 0;
-    char * p;
-    strtod(s, &p);
-    return *p == '\0';
+	if (s == NULL || *s == '\0' || isspace(*s)) 
+		return 0;
+	char * p;
+	strtod(s, &p);
+	return *p == '\0';
 }
 
 static char is_force(char* s) {
