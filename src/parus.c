@@ -57,8 +57,8 @@ static char is_decimal(char* s) {
     return *p == '\0';
 }
 
-static char is_imperative(char* s) {
-	return s[0] == IMP_CHAR && (s[1] == '\0' || isspace(s[1]));
+static char is_force(char* s) {
+	return s[0] == FORCE_CHAR && (s[1] == '\0' || isspace(s[1]));
 }
 
 static char is_quoted(char* s) {
@@ -80,7 +80,7 @@ static char is_symbol(char* s) {
 		&& !is_usermacro(s)
 		&& !is_integer(s) 
 		&& !is_decimal(s) 
-		&& !is_imperative(s) 
+		&& !is_force(s) 
 		&& !is_quoted(s);
 }
 
@@ -185,9 +185,9 @@ static ParusData* make_usermacro(char* expr) {
 		else if (is_decimal(token))
 			insert_instruction(mcr, new_parusdata_decimal(atof(token)));
 
-		else if (is_imperative(token)) { // imperative is implementated as a symbol
-			char imp_expr[2] = {IMP_CHAR, '\0'};
-			insert_instruction(mcr, new_parusdata_symbol(imp_expr));
+		else if (is_force(token)) { // force form is implementated as a symbol
+			char force_sym[2] = {FORCE_CHAR, '\0'};
+			insert_instruction(mcr, new_parusdata_symbol(force_sym));
 		}
 
 		else if (is_quoted(token) && is_symbol(token + quote_count(token)))
@@ -254,12 +254,6 @@ static int eval(char* expr, Stack* stk, Lexicon* lex) {
 	else if (is_decimal(expr))
 		stack_push(stk, new_parusdata_decimal(atof(expr)));
 
-
-	/* imperative form ( that is apply according to the top of the stack ) */
-	else if (is_imperative(expr)) 
-		parus_apply(stack_pull(stk), stk, lex);
-
-
 	/* quoted forms */
 	else if (is_quoted(expr)) {
 		if (is_symbol(expr + quote_count(expr)))
@@ -270,6 +264,10 @@ static int eval(char* expr, Stack* stk, Lexicon* lex) {
 			return 1;
 		}
 	}
+
+	/* force form (that is apply the top of the stack) */
+	else if (is_force(expr)) 
+		parus_apply(stack_pull(stk), stk, lex);
 
 
 	/* apply for given symbol */
@@ -522,7 +520,7 @@ void free_stack(Stack* stk) {
 }
 
 /* prints the stack contant */
-void stack_print(Stack* stk) {
+void print_stack(Stack* stk) {
 	for (int i = 0; i < stk->size; i++) {
 		print_parusdata(stk->items[i]);
 		printf(", ");
@@ -534,10 +532,7 @@ void stack_print(Stack* stk) {
 // LEXICON
 // ----------------------------------------------------------------------------------------------------
 
-/* 
-makes a new lexicon 
-outer = NULL for outmost lexicon
-*/
+/* makes a new lexicon */
 Lexicon* new_lexicon() {
 	Lexicon* lex = calloc(1, sizeof(Lexicon));
 
@@ -608,7 +603,7 @@ void free_lexicon(Lexicon* lex) {
 }
 
 /* prints the lexicon contant */
-void lexicon_print(Lexicon* lex) {
+void print_lexicon(Lexicon* lex) {
 	for (int i = 0; i < lex->size; i++) {
 		printf("%s : ", lex->entries[i].name);
 		print_parusdata(lex->entries[i].value);
@@ -620,11 +615,11 @@ void lexicon_print(Lexicon* lex) {
 // ----------------------------------------------------------------------------------------------------
 
 /* 
-	returns if the evaluator can call the expression by returning the parentheses count
+returns if the evaluator can call the expression by returning the parentheses count
 
-	if result > 0 unterminated expression
-	if result = 0 valid expression
-	if result < 0 overterminated expression
+if result > 0 unterminated expression
+if result = 0 valid expression
+if result < 0 overterminated expression
 */
 int valid_parus_expression(char* str) {
 	int result = 0;
@@ -702,7 +697,7 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 			if (instr->type == SYMBOL || instr->type == QUOTED) {
 
 				call_depth++;
-				int e = parus_apply(instr->type == SYMBOL && is_imperative(parusdata_getsymbol(instr)) ? 
+				int e = parus_apply(instr->type == SYMBOL && is_force(parusdata_getsymbol(instr)) ? 
 								stack_pull(stk) : parusdata_copy(instr), 
 								stk, lex);
 				call_depth--;
@@ -717,13 +712,14 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 
 		}
 
-		ParusData* 	last 	= pd->data.usermacro.instructions[pd->data.usermacro.size -1];
-		ParusData* 	next_pd	= NULL;
-		char 		impcall = 0;
+		ParusData* 	last 		= pd->data.usermacro.instructions[pd->data.usermacro.size -1];
+		ParusData* 	next_pd		= NULL;
 
-		if (last != NULL && last->type == SYMBOL && is_imperative(parusdata_getsymbol(last))) {
+		char is_forcing = 0;
+
+		if (last != NULL && last->type == SYMBOL && is_force(parusdata_getsymbol(last))) {
 			next_pd = stack_pull(stk);
-			impcall = 1;
+			is_forcing = 1;
 		}
 		else 
 			next_pd = parusdata_copy(last);
@@ -731,7 +727,7 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		free_parusdata(pd);
 
 		pd = next_pd;
-		if (pd != NULL && (pd->type == SYMBOL || pd->type == QUOTED || impcall))
+		if (pd != NULL && (pd->type == SYMBOL || pd->type == QUOTED || is_forcing))
 			goto recall;
 		else
 			stack_push(stk, pd);

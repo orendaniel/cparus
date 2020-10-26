@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define LP_CHAR 		'('
 #define RP_CHAR 		')'
 #define QUOTE_CHAR 		'\''
-#define IMP_CHAR 		'!'
+#define FORCE_CHAR 		'!'
 #define COMMENT_CHAR 	';'
 
 #define STACK_GROWTH 	50
@@ -123,14 +123,14 @@ ParusData* 	stack_pull(Stack* stk);
 ParusData* 	stack_get_at(Stack* stk, size_t index);
 void 		stack_remove_at(Stack* stk, size_t index);
 void 		free_stack(Stack* stk);
-void 		stack_print(Stack* stk);
+void 		print_stack(Stack* stk);
 
 Lexicon* 	new_lexicon();
 void 		lexicon_define(Lexicon* lex, char* name, ParusData* pd);
 void 		lexicon_delete(Lexicon* lex, char* name);
 ParusData* 	lexicon_get(Lexicon* lex, char* name);
 void 		free_lexicon(Lexicon* lex);
-void 		lexicon_print(Lexicon* lex);
+void 		print_lexicon(Lexicon* lex);
 
 int 	valid_parus_expression(char* str);
 int 	parus_apply(ParusData* pd, Stack* stk, Lexicon* lex);

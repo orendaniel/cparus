@@ -565,7 +565,7 @@ static int read(void* stk, void* lex) {
 			buffer[i] = '\0';
 			break;
 		}
-		else if (c != LP_CHAR && c != RP_CHAR && c != QUOTED && c != IMP_CHAR) {
+		else if (c != LP_CHAR && c != RP_CHAR && c != QUOTED && c != FORCE_CHAR) {
 			buffer[i] = (char)c;
 			i++;
 		}
@@ -656,12 +656,12 @@ static int setat(void* stk, void* lex) {
 }
 
 static int stkprint(void* stk, void* lex) {
-	stack_print(stk);
+	print_stack(stk);
 	return 0;
 }
 
 static int lexprint(void* stk, void* lex) {
-	lexicon_print(lex);
+	print_lexicon(lex);
 	return 0;
 }
 

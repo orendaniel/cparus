@@ -28,21 +28,22 @@ CParus can also be used as a library, for details refer to repl.c
 
 # The 4 Laws of the Parus language
 
-See also the Parus Manual:
-
-https://gitlab.com/oren_daniel/parus-manual
-
 if token is self evaluating:
 	push it to the stack
-
-elseif token is ! (imperative form):
-	apply the item in the top of the stack
 
 elseif token is pre-fixed with a ' (quoted form) :
 	quotate it and push it the stack
 
+elseif token is ! (force form):
+	apply the item in the top of the stack
+
 elseif symbol:
 	apply the token's binding
+
+Please refer to the parus manual, for more comprehensive explanation:
+
+https://gitlab.com/oren_daniel/parus-manual
+
 
 # Examples
 
