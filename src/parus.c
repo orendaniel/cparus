@@ -23,12 +23,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ----------------------------------------------------------------------------------------------------
 
 static char* copy_string(char* s) {
-	int size = 0;
-	while (s[size] != '\0')
-		++size;
-	char* ns = calloc(size, sizeof(char));
+	int 	size 	= strlen(s);
+	char* 	ns		= calloc(size +1, sizeof(char));
+
 	for (int i = 0; i < size; i++)
 		ns[i] = s[i];
+
+	ns[size] = '\0';
 
 	return ns;
 }
