@@ -616,17 +616,17 @@ void lexicon_print(Lexicon* lex) {
 	}
 }
 
-// EVALUATOR
+// CPARUS FUNCTIONS
 // ----------------------------------------------------------------------------------------------------
 
 /* 
-	returns if the evaluator can call the expression by returning the parenthesis count
+	returns if the evaluator can call the expression by returning the parentheses count
 
 	if result > 0 unterminated expression
 	if result = 0 valid expression
 	if result < 0 overterminated expression
 */
-int is_valid_parus_expression(char* str) {
+int valid_parus_expression(char* str) {
 	int result = 0;
 	int i = 0;
 	while (str[i] != '\0') {
@@ -761,7 +761,7 @@ void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
 			while ((c = input[++i]) != '\n' && c != '\0');
 		} 
 
-		else if (isspace(c) && is_valid_parus_expression(buffer) <= 0) { // if balanced expression
+		else if (isspace(c) && valid_parus_expression(buffer) <= 0) { // if balanced expression
 			buffer[j] = '\0';
 
 			int e = eval(buffer, stk, lex);

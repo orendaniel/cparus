@@ -132,7 +132,7 @@ ParusData* 	lexicon_get(Lexicon* lex, char* name);
 void 		free_lexicon(Lexicon* lex);
 void 		lexicon_print(Lexicon* lex);
 
-int 	is_valid_parus_expression(char* str);
+int 	valid_parus_expression(char* str);
 int 	parus_apply(ParusData* pd, Stack* stk, Lexicon* lex);
 void 	parus_evaluate(char* input, Stack* stk, Lexicon* lex);
 
