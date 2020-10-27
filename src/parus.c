@@ -18,6 +18,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "parus.h"
 
+// store the address the primitive which called parus_apply
+static primitive_t 	apply_caller;
+// back door operation to implement primitives like apply top
+static applier_t 	apply_op;
 
 // HELPERS
 // ----------------------------------------------------------------------------------------------------
@@ -58,10 +62,6 @@ static char is_decimal(char* s) {
 	return *p == '\0';
 }
 
-static char is_force(char* s) {
-	return s[0] == FORCE_CHAR && (s[1] == '\0' || isspace(s[1]));
-}
-
 static char is_quoted(char* s) {
 	return s[0] == QUOTE_CHAR;
 }
@@ -81,7 +81,6 @@ static char is_symbol(char* s) {
 		&& !is_usermacro(s)
 		&& !is_integer(s) 
 		&& !is_decimal(s) 
-		&& !is_force(s) 
 		&& !is_quoted(s);
 }
 
@@ -186,11 +185,6 @@ static ParusData* make_usermacro(char* expr) {
 		else if (is_decimal(token))
 			insert_instruction(mcr, new_parusdata_decimal(atof(token)));
 
-		else if (is_force(token)) { // force form is implementated as a symbol
-			char force_sym[2] = {FORCE_CHAR, '\0'};
-			insert_instruction(mcr, new_parusdata_symbol(force_sym));
-		}
-
 		else if (is_quoted(token) && is_symbol(token + quote_count(token)))
 			insert_instruction(mcr, new_parusdata_quote(quotate_symbol(token)));
 
@@ -234,7 +228,7 @@ static int eval(char* expr, Stack* stk, Lexicon* lex) {
 	if (isspace(expr[0]) || expr[0] == '\0')
 		return 0;
 
-	/* validate syntax */
+	/* invalid syntax */
 	if (is_termination(expr)) {
 		fprintf(stderr, "EXPECTED MACRO\n");
 		return 1;
@@ -265,11 +259,6 @@ static int eval(char* expr, Stack* stk, Lexicon* lex) {
 			return 1;
 		}
 	}
-
-	/* force form (that is apply the top of the stack) */
-	else if (is_force(expr)) 
-		parus_apply(stack_pull(stk), stk, lex);
-
 
 	/* apply for given symbol */
 	else if (is_symbol(expr)) {
@@ -622,7 +611,7 @@ if result > 0 unterminated expression
 if result = 0 valid expression
 if result < 0 overterminated expression
 */
-int valid_parus_expression(char* str) {
+int parus_validate_expression(char* str) {
 	int result = 0;
 	int i = 0;
 	while (str[i] != '\0') {
@@ -635,6 +624,16 @@ int valid_parus_expression(char* str) {
 
 	}   
 	return result;
+}
+
+/*
+sets apply_caller and apply_op.
+make sure to call parus_set_applier(NULL, NULL), 
+after calling it in order to reset the values.
+*/
+void parus_set_applier(primitive_t p, applier_t a) {
+	apply_caller 	= p;
+	apply_op		= a;
 }
 
 /*
@@ -654,6 +653,10 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 	}
 
 	recall:
+
+	// first call of an applying primitive
+	if (pd == NULL && apply_op != NULL && apply_caller != NULL)
+		pd = apply_op(stk, lex);
 
 	if (pd == NULL || pd->type == NONE)
 		return 0;
@@ -676,10 +679,20 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 	}
 
 	else if (pd->type == PRIMITIVE_MACRO) {
-		int result = (*pd->data.primitive)(stk, lex);
-		if (result)
-			fprintf(stderr, "ERROR\n");
-		free_parusdata(pd);
+		// dont allow mutual recursion between applier and parus_apply
+		if (apply_caller != pd->data.primitive) {
+			int result = (*pd->data.primitive)(stk, lex);
+			if (result)
+				fprintf(stderr, "ERROR\n");
+			free_parusdata(pd);
+		}
+		else {
+			if (apply_op != NULL) {
+				free_parusdata(pd);
+				pd = (*apply_op)(stk, lex);
+				goto recall;
+			}
+		}
 	}
 
 	else if (pd->type == USER_MACRO) {
@@ -698,10 +711,9 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 			if (instr->type == SYMBOL || instr->type == QUOTED) {
 
 				call_depth++;
-				int e = parus_apply(instr->type == SYMBOL && is_force(parusdata_getsymbol(instr)) ? 
-								stack_pull(stk) : parusdata_copy(instr), 
-								stk, lex);
+				int e = parus_apply(parusdata_copy(instr), stk, lex);
 				call_depth--;
+
 				if (e) {
 					free_parusdata(pd);
 					return 1;
@@ -714,21 +726,12 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		}
 
 		ParusData* 	last 		= pd->data.usermacro.instructions[pd->data.usermacro.size -1];
-		ParusData* 	next_pd		= NULL;
-
-		char is_forcing = 0;
-
-		if (last != NULL && last->type == SYMBOL && is_force(parusdata_getsymbol(last))) {
-			next_pd = stack_pull(stk);
-			is_forcing = 1;
-		}
-		else 
-			next_pd = parusdata_copy(last);
+		ParusData* 	next_pd		= parusdata_copy(last);
 
 		free_parusdata(pd);
 
 		pd = next_pd;
-		if (pd != NULL && (pd->type == SYMBOL || pd->type == QUOTED || is_forcing))
+		if (pd != NULL && (pd->type == SYMBOL || pd->type == QUOTED))
 			goto recall;
 		else
 			stack_push(stk, pd);
@@ -758,7 +761,7 @@ void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
 			while ((c = input[++i]) != '\n' && c != '\0');
 		} 
 
-		else if (isspace(c) && valid_parus_expression(buffer) <= 0) { // if balanced expression
+		else if (isspace(c) && parus_validate_expression(buffer) <= 0) { // if balanced expression
 			buffer[j] = '\0';
 
 			int e = eval(buffer, stk, lex);

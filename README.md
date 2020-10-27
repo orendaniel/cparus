@@ -26,16 +26,13 @@ Further more, for sake of simplicity this implementation doesn't support strings
 
 CParus can also be used as a library, for details refer to repl.c
 
-# The 4 Laws of the Parus language
+# The 3 Laws of the Parus language
 
 if token is self evaluating:
 	push it to the stack
 
 elseif token is pre-fixed with a ' (quoted form) :
 	quotate it and push it the stack
-
-elseif token is ! (force form):
-	apply the item in the top of the stack
 
 elseif symbol:
 	apply the token's binding

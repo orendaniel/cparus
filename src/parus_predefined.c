@@ -72,6 +72,10 @@ static char equivalent(ParusData* pd1, ParusData* pd2) {
 		return pd1 == pd2;
 }
 
+static ParusData* top_of_stack(void* stk, void* lex) {
+	return stack_pull(stk);
+}
+
 static int define(void* stk, void* lex) {
 	ParusData* sym = stack_pull(stk);
 	ParusData* val = stack_pull(stk);
@@ -133,6 +137,17 @@ static int if_func(void* stk, void* lex) {
 		return 0;
 
 	}
+}
+
+static int apply_top(void* stk, void* lex) {
+	parus_set_applier(&apply_top, &top_of_stack);
+	int e = parus_apply(NULL, stk, lex);
+	parus_set_applier(NULL, NULL);
+	if (e)
+		fprintf(stderr, "CANNOT APPLY TOP OF STACK\n");
+
+	return e;
+
 }
 
 static int quote(void* stk, void* lex) {
@@ -565,7 +580,7 @@ static int read(void* stk, void* lex) {
 			buffer[i] = '\0';
 			break;
 		}
-		else if (c != LP_CHAR && c != RP_CHAR && c != QUOTED && c != FORCE_CHAR) {
+		else if (c != LP_CHAR && c != RP_CHAR && c != QUOTED) {
 			buffer[i] = (char)c;
 			i++;
 		}
@@ -812,6 +827,8 @@ static int help(void* stk, void* lex) {
 }
 
 
+
+
 Lexicon* predefined_lexicon() {
 	Lexicon* lex = new_lexicon();
 
@@ -819,6 +836,7 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "DEF", new_parusdata_primitive(&define));
 	lexicon_define(lex, "DEL", new_parusdata_primitive(&delete));
 	lexicon_define(lex, "IF", new_parusdata_primitive(&if_func));
+	lexicon_define(lex, "!", new_parusdata_primitive(&apply_top));
 	lexicon_define(lex, "QUOTE", new_parusdata_primitive(&quote));
 	lexicon_define(lex, "@", new_parusdata_primitive(&fetch));
 	lexicon_define(lex, "@.", new_parusdata_primitive(&fetch_copy));

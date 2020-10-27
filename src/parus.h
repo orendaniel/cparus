@@ -28,7 +28,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define LP_CHAR 		'('
 #define RP_CHAR 		')'
 #define QUOTE_CHAR 		'\''
-#define FORCE_CHAR 		'!'
 #define COMMENT_CHAR 	';'
 
 #define STACK_GROWTH 	50
@@ -103,6 +102,9 @@ typedef struct lexicon {
 
 } Lexicon;
 
+typedef ParusData* (*applier_t)(void*, void*);
+
+
 ParusData* 		parusdata_copy(ParusData* original);
 ParusData* 		new_parusdata_integer(integer_t i);
 integer_t 		parusdata_tointeger(ParusData* pd);
@@ -132,7 +134,8 @@ ParusData* 	lexicon_get(Lexicon* lex, char* name);
 void 		free_lexicon(Lexicon* lex);
 void 		print_lexicon(Lexicon* lex);
 
-int 	valid_parus_expression(char* str);
+int 	parus_validate_expression(char* str);
+void 	parus_set_applier(primitive_t p, applier_t a);
 int 	parus_apply(ParusData* pd, Stack* stk, Lexicon* lex);
 void 	parus_evaluate(char* input, Stack* stk, Lexicon* lex);
 
