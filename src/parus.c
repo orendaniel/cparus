@@ -610,20 +610,29 @@ if result = 0 valid expression
 if result < 0 overterminated expression
 */
 int parus_validate_expression(char* str) {
-	int result = 0;
-	int i = 0;
+	int 	result  = 0;
+	char 	ignore  = 0;
+	int 	i 		= 0;
+
 	while (str[i] != '\0') {
-		if (is_usermacro(str +i)) 
+		if (str[i] == COMMENT_CHAR)
+			ignore = 1;
+
+		else if (str[i] == '\n')
+			ignore = 0;
+
+		if (!ignore && str[i] == LP_CHAR)
 			result++;
 
-		else if (is_termination(str +i))
+		else if (!ignore && str[i] == RP_CHAR)
 			result--;
+
 		i++;
 
 	}   
+
 	return result;
 }
-
 /*
 sets apply_caller and apply_op.
 make sure to call parus_set_applier(NULL, NULL), 

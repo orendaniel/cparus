@@ -102,7 +102,7 @@ char* repl_read() {
 			exit(EXIT_FAILURE);
 		}
 
-		input[input_len-1] = ' '; // replace \0 with a space
+		input[input_len-1] = '\n'; // replace \0 with a space
 		for (int i = 0; i < addition_len; i++) 
 			input[input_len +i] = addition[i];
 
