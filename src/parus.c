@@ -74,14 +74,12 @@ static ParusData* quotate_symbol(char* expr) {
 }
 
 static char is_symbol(char* s) {
-	int 	i 		= 0;
-	char 	valid 	= 0;
-
 	return !is_termination(s)
 		&& !is_usermacro(s)
 		&& !is_integer(s) 
 		&& !is_decimal(s) 
-		&& !is_quoted(s);
+		&& !is_quoted(s)
+		&& s[0] != '\0';
 }
 
 static int quote_count(char* s) {
