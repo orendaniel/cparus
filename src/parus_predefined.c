@@ -17,9 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "parus_predefined.h"
-#include <time.h>
 #include <math.h>
-
 
 #define READ_BUFFER 128
 
@@ -191,12 +189,12 @@ static int eqv(void* stk, void* lex) {
 
 static int fetch(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
-
 	if (pd == NULL || pd->type != INTEGER) {
 		fprintf(stderr, "INDEX MUST BE AN INTEGER\n");
 		free_parusdata(pd);
 		return 1;
 	}
+
 	if (parusdata_tointeger(pd) < ((Stack*)stk)->size && parusdata_tointeger(pd) >= 0) {
 		ParusData* res = stack_get_at(stk, parusdata_tointeger(pd));
 
@@ -275,104 +273,56 @@ static int find(void* stk, void* lex) {
 // ARTHMATICS
 // ----------------------------------------------------------------------------------------------------
 
-static int add(void* stk, void* lex) {
-	ParusData* pd2 = stack_pull(stk);
-	ParusData* pd1 = stack_pull(stk);
-
-	if (!is_number(pd1) || !is_number(pd2)) {
-		free_parusdata(pd1);
-		free_parusdata(pd2);
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
-		return 1;
+#define GET_TWO_NUMBERS 							\
+	ParusData* pd2 = stack_pull(stk); 				\
+	ParusData* pd1 = stack_pull(stk); 				\
+													\
+	if (!is_number(pd1) || !is_number(pd2)) { 		\
+		free_parusdata(pd1); 						\
+		free_parusdata(pd2); 						\
+		fprintf(stderr, "EXPECTED TWO NUMBERS\n"); 	\
+		return 1; 									\
 	}
 
-	if (pd1->type == INTEGER && pd2->type == INTEGER) {
-		integer_t a = parusdata_tointeger(pd1);
-		integer_t b = parusdata_tointeger(pd2);
-		stack_push(stk, new_parusdata_integer(a + b));
-	}
-	else {
-		decimal_t a = force_decimal(pd1);
-		decimal_t b = force_decimal(pd2);
-		stack_push(stk, new_parusdata_decimal(a + b));
-
-	}
-	
-	free_parusdata(pd1);
+#define ARTH_OP(FUNCINT, FUNCDEC, OP) 						\
+	if (pd1->type == INTEGER && pd2->type == INTEGER) { 	\
+		integer_t a = parusdata_tointeger(pd1); 			\
+		integer_t b = parusdata_tointeger(pd2); 			\
+		stack_push(stk, FUNCINT(a OP b)); 					\
+	} 														\
+	else { 													\
+		decimal_t a = force_decimal(pd1); 					\
+		decimal_t b = force_decimal(pd2); 					\
+		stack_push(stk, FUNCDEC(a OP b)); 					\
+															\
+	} 														\
+	free_parusdata(pd1); 									\
 	free_parusdata(pd2);
+
+static int add(void* stk, void* lex) {
+	GET_TWO_NUMBERS;
+	ARTH_OP(new_parusdata_integer, new_parusdata_decimal, +);
 	return 0;
 }
 
 static int subtract(void* stk, void* lex) {
-	ParusData* pd2 = stack_pull(stk);
-	ParusData* pd1 = stack_pull(stk);
-
-	if (!is_number(pd1) || !is_number(pd2)) {
-		free_parusdata(pd1);
-		free_parusdata(pd2);
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
-		return 1;
-	}
-
-	if (pd1->type == INTEGER && pd2->type == INTEGER) {
-		integer_t a = parusdata_tointeger(pd1);
-		integer_t b = parusdata_tointeger(pd2);
-		stack_push(stk, new_parusdata_integer(a - b));
-	}
-	else {
-		decimal_t a = force_decimal(pd1);
-		decimal_t b = force_decimal(pd2);
-		stack_push(stk, new_parusdata_decimal(a - b));
-
-	}
-	
-	free_parusdata(pd1);
-	free_parusdata(pd2);
+	GET_TWO_NUMBERS;
+	ARTH_OP(new_parusdata_integer, new_parusdata_decimal, -);
 	return 0;
 }
 
 static int multiply(void* stk, void* lex) {
-	ParusData* pd2 = stack_pull(stk);
-	ParusData* pd1 = stack_pull(stk);
-
-	if (!is_number(pd1) || !is_number(pd2)) {
-		free_parusdata(pd1);
-		free_parusdata(pd2);
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
-		return 1;
-	}
-
-	if (pd1->type == INTEGER && pd2->type == INTEGER) {
-		integer_t a = parusdata_tointeger(pd1);
-		integer_t b = parusdata_tointeger(pd2);
-		stack_push(stk, new_parusdata_integer(a * b));
-	}
-	else {
-		decimal_t a = force_decimal(pd1);
-		decimal_t b = force_decimal(pd2);
-		stack_push(stk, new_parusdata_decimal(a * b));
-
-	}
-	
-	free_parusdata(pd1);
-	free_parusdata(pd2);
+	GET_TWO_NUMBERS;
+	ARTH_OP(new_parusdata_integer, new_parusdata_decimal, *);
 	return 0;
 }
 
 static int divide(void* stk, void* lex) {
-	ParusData* pd2 = stack_pull(stk);
-	ParusData* pd1 = stack_pull(stk);
-	if (!is_number(pd1) || !is_number(pd2)) {
-		free_parusdata(pd1);
-		free_parusdata(pd2);
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
-		return 1;
-	}
+	GET_TWO_NUMBERS;
 
 	if ((pd2->type == INTEGER && parusdata_tointeger(pd2) == 0) || 
 			(pd2->type == DECIMAL && parusdata_todecimal(pd2) == 0)) 
 		fprintf(stderr, "WARNING: DIVISION BY ZERO IS UNDEFINED BEHAVIOR\n");
-
 
 	decimal_t a = force_decimal(pd1);
 	decimal_t b = force_decimal(pd2);
@@ -384,15 +334,7 @@ static int divide(void* stk, void* lex) {
 }
 
 static int powerof(void* stk, void* lex) {
-	ParusData* pd2 = stack_pull(stk);
-	ParusData* pd1 = stack_pull(stk);
-
-	if (!is_number(pd1) || !is_number(pd2)) {
-		free_parusdata(pd1);
-		free_parusdata(pd2);
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
-		return 1;
-	}
+	GET_TWO_NUMBERS;
 
 	decimal_t a = force_decimal(pd1);
 	decimal_t b = force_decimal(pd2);
@@ -404,86 +346,20 @@ static int powerof(void* stk, void* lex) {
 }
 
 static int equal(void* stk, void* lex) {
-	ParusData* pd2 = stack_pull(stk);
-	ParusData* pd1 = stack_pull(stk);
-
-	if (!is_number(pd1) || !is_number(pd2)) {
-		free_parusdata(pd1);
-		free_parusdata(pd2);
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
-		return 1;
-	}
-
-	if (pd1->type == INTEGER && pd2->type == INTEGER) {
-		integer_t a = parusdata_tointeger(pd1);
-		integer_t b = parusdata_tointeger(pd2);
-		stack_push(stk, new_parusdata_integer(a == b));
-	}
-	else {
-		decimal_t a = force_decimal(pd1);
-		decimal_t b = force_decimal(pd2);
-		stack_push(stk, new_parusdata_integer(a == b));
-
-	}
-	
-	free_parusdata(pd1);
-	free_parusdata(pd2);
+	GET_TWO_NUMBERS;
+	ARTH_OP(new_parusdata_integer, new_parusdata_integer, ==);
 	return 0;
 }
 
 static int less_than(void* stk, void* lex) {
-	ParusData* pd2 = stack_pull(stk);
-	ParusData* pd1 = stack_pull(stk);
-
-	if (!is_number(pd1) || !is_number(pd2)) {
-		free_parusdata(pd1);
-		free_parusdata(pd2);
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
-		return 1;
-	}
-
-	if (pd1->type == INTEGER && pd2->type == INTEGER) {
-		integer_t a = parusdata_tointeger(pd1);
-		integer_t b = parusdata_tointeger(pd2);
-		stack_push(stk, new_parusdata_integer(a < b));
-	}
-	else {
-		decimal_t a = force_decimal(pd1);
-		decimal_t b = force_decimal(pd2);
-		stack_push(stk, new_parusdata_integer(a < b));
-
-	}
-	
-	free_parusdata(pd1);
-	free_parusdata(pd2);
+	GET_TWO_NUMBERS;
+	ARTH_OP(new_parusdata_integer, new_parusdata_integer, <);
 	return 0;
 }
 
 static int greater_than(void* stk, void* lex) {
-	ParusData* pd2 = stack_pull(stk);
-	ParusData* pd1 = stack_pull(stk);
-
-	if (!is_number(pd1) || !is_number(pd2)) {
-		free_parusdata(pd1);
-		free_parusdata(pd2);
-		fprintf(stderr, "EXPECTED TWO NUMBERS\n");
-		return 1;
-	}
-
-	if (pd1->type == INTEGER && pd2->type == INTEGER) {
-		integer_t a = parusdata_tointeger(pd1);
-		integer_t b = parusdata_tointeger(pd2);
-		stack_push(stk, new_parusdata_integer(a > b));
-	}
-	else {
-		decimal_t a = force_decimal(pd1);
-		decimal_t b = force_decimal(pd2);
-		stack_push(stk, new_parusdata_integer(a > b));
-
-	}
-	
-	free_parusdata(pd1);
-	free_parusdata(pd2);
+	GET_TWO_NUMBERS;
+	ARTH_OP(new_parusdata_integer, new_parusdata_integer, >);
 	return 0;
 }
 
@@ -503,64 +379,41 @@ static int round_value(void* stk, void* lex) {
 // REFLECTION
 // ----------------------------------------------------------------------------------------------------
 
-static int is_top_integer(void* stk, void* lex) {
-	ParusData* pd = stack_get_at(stk, 0);
-	if (pd != NULL && pd->type == INTEGER)
-		stack_push(stk, new_parusdata_integer(1));
-	else
-		stack_push(stk, new_parusdata_integer(0));
+#define REFLECTION_TEMPLATE(COND) 						\
+	ParusData* pd = stack_pull(stk); 					\
+	if (pd != NULL && COND) {							\
+		stack_push(stk, pd); 							\
+		stack_push(stk, new_parusdata_integer(1)); 		\
+	} 													\
+	else { 												\
+		stack_push(stk, pd); 							\
+		stack_push(stk, new_parusdata_integer(0)); 		\
+	}
 
-	free_parusdata(pd);
+static int is_top_integer(void* stk, void* lex) {
+	REFLECTION_TEMPLATE(pd->type == INTEGER);
 	return 0;
 }
 
 static int is_top_decimal(void* stk, void* lex) {
-	ParusData* pd = stack_get_at(stk, 0);
-	if (pd != NULL && pd->type == DECIMAL)
-		stack_push(stk, new_parusdata_integer(1));
-	else
-		stack_push(stk, new_parusdata_integer(0));
-
-	free_parusdata(pd);
+	REFLECTION_TEMPLATE(pd->type == DECIMAL);
 	return 0;
 
 }
 
 static int is_top_macro(void* stk, void* lex) {
-	ParusData* pd = stack_get_at(stk, 0);
-	if (pd != NULL && pd->type == USER_MACRO || pd->type == PRIMITIVE_MACRO)
-		stack_push(stk, new_parusdata_integer(1));
-	else
-		stack_push(stk, new_parusdata_integer(0));
-
-	free_parusdata(pd);
+	REFLECTION_TEMPLATE(pd->type == USER_MACRO || pd->type == PRIMITIVE_MACRO);
 	return 0;
-
-
 }
 
 static int is_top_symbol(void* stk, void* lex) {
-	ParusData* pd = stack_get_at(stk, 0);
-	if (pd != NULL && pd->type == SYMBOL)
-		stack_push(stk, new_parusdata_integer(1));
-	else
-		stack_push(stk, new_parusdata_integer(0));
-
-	free_parusdata(pd);
+	REFLECTION_TEMPLATE(pd->type == SYMBOL);
 	return 0;
-
 }
 
 static int is_top_quoted(void* stk, void* lex) {
-	ParusData* pd = stack_get_at(stk, 0);
-	if (pd != NULL && pd->type == QUOTED)
-		stack_push(stk, new_parusdata_integer(1));
-	else
-		stack_push(stk, new_parusdata_integer(0));
-
-	free_parusdata(pd);
+	REFLECTION_TEMPLATE(pd->type == QUOTED);
 	return 0;
-
 }
 
 // IO
@@ -681,8 +534,6 @@ static int setat(void* stk, void* lex) {
 		return 1;
 	}
 
-
-
 	return 0;
 }
 
@@ -697,10 +548,9 @@ static int for_macro(void* stk, void* lex) {
 	ParusData* sym 	= stack_pull(stk);
 
 	if (fn == NULL || inc == NULL || cmp == NULL || max == NULL || min == NULL || sym == NULL 
-		|| inc->type != INTEGER ||
-			min->type != INTEGER || max->type != INTEGER ||
+			|| inc->type != INTEGER || min->type != INTEGER || max->type != INTEGER || 
 			sym->type != SYMBOL || 
-			!(cmp->type == SYMBOL || cmp->type == USER_MACRO)) {
+			!(cmp->type == SYMBOL || cmp->type == USER_MACRO || cmp->type == PRIMITIVE_MACRO)) {
 		
 		fprintf(stderr, "WRONG TYPES OF PARAMETERS GIVEN\n");
 		fprintf(stderr, "SYMBOL MIN MAX CMP INC FN\n");
@@ -816,12 +666,6 @@ static int end_case_macro(void* stk, void* lex) {
 	return 0;
 }
 
-static int now(void* stk, void* lex) {
-	stack_push((Stack*)stk, new_parusdata_decimal((decimal_t)clock()/CLOCKS_PER_SEC));
-	return 0;
-
-}
-
 static int quit(void* stk, void* lex) {
 	exit(EXIT_SUCCESS);
 	return 0;
@@ -846,9 +690,6 @@ static int help(void* stk, void* lex) {
 	return 0;
 }
 
-
-
-
 Lexicon* predefined_lexicon() {
 	Lexicon* lex = new_lexicon();
 
@@ -864,7 +705,6 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "DROP", new_parusdata_primitive(&drop));
 	lexicon_define(lex, "FIND", new_parusdata_primitive(&find));
 
-
 	lexicon_define(lex, "+", new_parusdata_primitive(&add));
 	lexicon_define(lex, "-", new_parusdata_primitive(&subtract));
 	lexicon_define(lex, "*", new_parusdata_primitive(&multiply));
@@ -875,13 +715,11 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, ">", new_parusdata_primitive(&greater_than));
 	lexicon_define(lex, "ROUND", new_parusdata_primitive(&round_value));
 
-
 	lexicon_define(lex, "INTEGER?", new_parusdata_primitive(&is_top_integer));
 	lexicon_define(lex, "DECIMAL?", new_parusdata_primitive(&is_top_decimal));
 	lexicon_define(lex, "MACRO?", new_parusdata_primitive(&is_top_macro));
 	lexicon_define(lex, "SYMBOL?", new_parusdata_primitive(&is_top_symbol));
 	lexicon_define(lex, "QUOTED?", new_parusdata_primitive(&is_top_quoted));
-
 
 	lexicon_define(lex, "OUT", new_parusdata_primitive(&out));
 	lexicon_define(lex, "OUTLN", new_parusdata_primitive(&outln));
@@ -894,7 +732,6 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "FOR", new_parusdata_primitive(&for_macro));
 	lexicon_define(lex, "CASE", new_parusdata_quote(new_parusdata_symbol("CASE")));
 	lexicon_define(lex, "END-CASE", new_parusdata_primitive(&end_case_macro));
-	lexicon_define(lex, "NOW", new_parusdata_primitive(&now));
 	lexicon_define(lex, "QUIT", new_parusdata_primitive(&quit));
 
 	lexicon_define(lex, "?stk", new_parusdata_primitive(&stkprint));
