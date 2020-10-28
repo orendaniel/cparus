@@ -19,9 +19,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "parus.h"
 
 // store the address the primitive which called parus_apply
-static primitive_t 	apply_caller;
+static primitive_t apply_caller;
+
 // back door operation to implement primitives like apply top
-static applier_t 	apply_op;
+static applier_t apply_op;
 
 // HELPERS
 // ----------------------------------------------------------------------------------------------------
