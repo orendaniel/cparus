@@ -407,6 +407,7 @@ void free_parusdata(ParusData* pd) {
 	}
 }
 
+/* prints parusdata */
 void print_parusdata(ParusData* pd) {
 	if (pd->type == INTEGER) 
 		printf("%ld", parusdata_tointeger(pd));
