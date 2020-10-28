@@ -76,6 +76,10 @@ static ParusData* top_of_stack(void* stk, void* lex) {
 	return stack_pull(stk);
 }
 
+
+// BASIC
+// ----------------------------------------------------------------------------------------------------
+
 static int define(void* stk, void* lex) {
 	ParusData* sym = stack_pull(stk);
 	ParusData* val = stack_pull(stk);
@@ -104,7 +108,34 @@ static int delete(void* stk, void* lex) {
 	return 0;
 }
 
-static int if_func(void* stk, void* lex) {
+static int apply_top(void* stk, void* lex) {
+	parus_set_applier(&apply_top, &top_of_stack);
+	int e = parus_apply(NULL, stk, lex);
+	parus_set_applier(NULL, NULL);
+	if (e)
+		fprintf(stderr, "CANNOT APPLY TOP OF STACK\n");
+
+	return e;
+
+}
+
+static int quote(void* stk, void* lex) {
+	ParusData* pd = stack_pull(stk);
+
+	if (pd == NULL || !(pd->type == SYMBOL || pd->type == QUOTED)) {
+		free_parusdata(pd);
+		fprintf(stderr, "CAN NOT PREFORM QUOTE OPERATION\n");
+		return 1;
+	}
+
+	else 
+		stack_push(stk, new_parusdata_quote(pd));
+
+
+	return 0;
+}
+
+static int if_macro(void* stk, void* lex) {
 	ParusData* do_false	= stack_pull(stk);
 	ParusData* do_true 	= stack_pull(stk);
 	ParusData* cond		= stack_pull(stk);
@@ -139,30 +170,22 @@ static int if_func(void* stk, void* lex) {
 	}
 }
 
-static int apply_top(void* stk, void* lex) {
-	parus_set_applier(&apply_top, &top_of_stack);
-	int e = parus_apply(NULL, stk, lex);
-	parus_set_applier(NULL, NULL);
-	if (e)
-		fprintf(stderr, "CANNOT APPLY TOP OF STACK\n");
+static int eqv(void* stk, void* lex) {
+	ParusData* pd2 = stack_pull(stk);
+	ParusData* pd1 = stack_pull(stk);
 
-	return e;
-
-}
-
-static int quote(void* stk, void* lex) {
-	ParusData* pd = stack_pull(stk);
-
-	if (pd == NULL || !(pd->type == SYMBOL || pd->type == QUOTED)) {
-		free_parusdata(pd);
-		fprintf(stderr, "CAN NOT PREFORM QUOTE OPERATION\n");
+	if (pd1 == NULL || pd2 == NULL) {
+		free_parusdata(pd1);
+		free_parusdata(pd2);
+		fprintf(stderr, "ATTEMPT TO COMPARE NULLITY\n");
 		return 1;
+		
 	}
 
-	else 
-		stack_push(stk, new_parusdata_quote(pd));
-
-
+	stack_push(stk, new_parusdata_integer(equivalent(pd1, pd2)));
+	
+	free_parusdata(pd1);
+	free_parusdata(pd2);
 	return 0;
 }
 
@@ -217,6 +240,13 @@ static int length(void* stk, void* lex) {
 	return 0;
 }
 
+static int drop(void* stk, void* lex) {
+	ParusData* pd = stack_pull(stk);
+	free_parusdata(pd);
+
+	return 0;
+}
+
 static int find(void* stk, void* lex) {
 	Stack* 		pstk 	= (Stack*)stk;
 	ParusData* 	pd 		= stack_pull(stk);
@@ -242,84 +272,8 @@ static int find(void* stk, void* lex) {
 
 }
 
-static int eqv(void* stk, void* lex) {
-	ParusData* pd2 = stack_pull(stk);
-	ParusData* pd1 = stack_pull(stk);
-
-	if (pd1 == NULL || pd2 == NULL) {
-		free_parusdata(pd1);
-		free_parusdata(pd2);
-		fprintf(stderr, "ATTEMPT TO COMPARE NULLITY\n");
-		return 1;
-		
-	}
-
-	stack_push(stk, new_parusdata_integer(equivalent(pd1, pd2)));
-	
-	free_parusdata(pd1);
-	free_parusdata(pd2);
-	return 0;
-}
-
-static int is_top_integer(void* stk, void* lex) {
-	ParusData* pd = stack_get_at(stk, 0);
-	if (pd != NULL && pd->type == INTEGER)
-		stack_push(stk, new_parusdata_integer(1));
-	else
-		stack_push(stk, new_parusdata_integer(0));
-
-	free_parusdata(pd);
-	return 0;
-}
-
-static int is_top_decimal(void* stk, void* lex) {
-	ParusData* pd = stack_get_at(stk, 0);
-	if (pd != NULL && pd->type == DECIMAL)
-		stack_push(stk, new_parusdata_integer(1));
-	else
-		stack_push(stk, new_parusdata_integer(0));
-
-	free_parusdata(pd);
-	return 0;
-
-}
-
-static int is_top_macro(void* stk, void* lex) {
-	ParusData* pd = stack_get_at(stk, 0);
-	if (pd != NULL && pd->type == USER_MACRO || pd->type == PRIMITIVE_MACRO)
-		stack_push(stk, new_parusdata_integer(1));
-	else
-		stack_push(stk, new_parusdata_integer(0));
-
-	free_parusdata(pd);
-	return 0;
-
-
-}
-
-static int is_top_symbol(void* stk, void* lex) {
-	ParusData* pd = stack_get_at(stk, 0);
-	if (pd != NULL && pd->type == SYMBOL)
-		stack_push(stk, new_parusdata_integer(1));
-	else
-		stack_push(stk, new_parusdata_integer(0));
-
-	free_parusdata(pd);
-	return 0;
-
-}
-
-static int is_top_quoted(void* stk, void* lex) {
-	ParusData* pd = stack_get_at(stk, 0);
-	if (pd != NULL && pd->type == QUOTED)
-		stack_push(stk, new_parusdata_integer(1));
-	else
-		stack_push(stk, new_parusdata_integer(0));
-
-	free_parusdata(pd);
-	return 0;
-
-}
+// ARTHMATICS
+// ----------------------------------------------------------------------------------------------------
 
 static int add(void* stk, void* lex) {
 	ParusData* pd2 = stack_pull(stk);
@@ -546,6 +500,72 @@ static int round_value(void* stk, void* lex) {
 }
 
 
+// REFLECTION
+// ----------------------------------------------------------------------------------------------------
+
+static int is_top_integer(void* stk, void* lex) {
+	ParusData* pd = stack_get_at(stk, 0);
+	if (pd != NULL && pd->type == INTEGER)
+		stack_push(stk, new_parusdata_integer(1));
+	else
+		stack_push(stk, new_parusdata_integer(0));
+
+	free_parusdata(pd);
+	return 0;
+}
+
+static int is_top_decimal(void* stk, void* lex) {
+	ParusData* pd = stack_get_at(stk, 0);
+	if (pd != NULL && pd->type == DECIMAL)
+		stack_push(stk, new_parusdata_integer(1));
+	else
+		stack_push(stk, new_parusdata_integer(0));
+
+	free_parusdata(pd);
+	return 0;
+
+}
+
+static int is_top_macro(void* stk, void* lex) {
+	ParusData* pd = stack_get_at(stk, 0);
+	if (pd != NULL && pd->type == USER_MACRO || pd->type == PRIMITIVE_MACRO)
+		stack_push(stk, new_parusdata_integer(1));
+	else
+		stack_push(stk, new_parusdata_integer(0));
+
+	free_parusdata(pd);
+	return 0;
+
+
+}
+
+static int is_top_symbol(void* stk, void* lex) {
+	ParusData* pd = stack_get_at(stk, 0);
+	if (pd != NULL && pd->type == SYMBOL)
+		stack_push(stk, new_parusdata_integer(1));
+	else
+		stack_push(stk, new_parusdata_integer(0));
+
+	free_parusdata(pd);
+	return 0;
+
+}
+
+static int is_top_quoted(void* stk, void* lex) {
+	ParusData* pd = stack_get_at(stk, 0);
+	if (pd != NULL && pd->type == QUOTED)
+		stack_push(stk, new_parusdata_integer(1));
+	else
+		stack_push(stk, new_parusdata_integer(0));
+
+	free_parusdata(pd);
+	return 0;
+
+}
+
+// IO
+// ----------------------------------------------------------------------------------------------------
+
 static int out(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
 	if (pd == NULL) {
@@ -616,6 +636,9 @@ static int putcharacter(void* stk, void* lex) {
 }
 
 
+// OPTIONALS
+// ----------------------------------------------------------------------------------------------------
+
 static int dpl(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
 	
@@ -627,13 +650,6 @@ static int dpl(void* stk, void* lex) {
 	
 	stack_push(stk, pd);
 	stack_push(stk, parusdata_copy(pd));
-
-	return 0;
-}
-
-static int drop(void* stk, void* lex) {
-	ParusData* pd = stack_pull(stk);
-	free_parusdata(pd);
 
 	return 0;
 }
@@ -670,15 +686,6 @@ static int setat(void* stk, void* lex) {
 	return 0;
 }
 
-static int stkprint(void* stk, void* lex) {
-	print_stack(stk);
-	return 0;
-}
-
-static int lexprint(void* stk, void* lex) {
-	print_lexicon(lex);
-	return 0;
-}
 
 static int for_macro(void* stk, void* lex) {
 
@@ -821,6 +828,19 @@ static int quit(void* stk, void* lex) {
 
 }
 
+// DEBUGGING AND HELP
+// ----------------------------------------------------------------------------------------------------
+
+static int stkprint(void* stk, void* lex) {
+	print_stack(stk);
+	return 0;
+}
+
+static int lexprint(void* stk, void* lex) {
+	print_lexicon(lex);
+	return 0;
+}
+
 static int help(void* stk, void* lex) {
 	printf(HELP_MESSAGE);
 	return 0;
@@ -832,26 +852,19 @@ static int help(void* stk, void* lex) {
 Lexicon* predefined_lexicon() {
 	Lexicon* lex = new_lexicon();
 
-	// basic
 	lexicon_define(lex, "DEF", new_parusdata_primitive(&define));
 	lexicon_define(lex, "DEL", new_parusdata_primitive(&delete));
-	lexicon_define(lex, "IF", new_parusdata_primitive(&if_func));
 	lexicon_define(lex, "!", new_parusdata_primitive(&apply_top));
 	lexicon_define(lex, "QUOTE", new_parusdata_primitive(&quote));
+	lexicon_define(lex, "IF", new_parusdata_primitive(&if_macro));
+	lexicon_define(lex, "EQV?", new_parusdata_primitive(&eqv));
 	lexicon_define(lex, "@", new_parusdata_primitive(&fetch));
 	lexicon_define(lex, "@.", new_parusdata_primitive(&fetch_copy));
 	lexicon_define(lex, "LEN", new_parusdata_primitive(&length));
+	lexicon_define(lex, "DROP", new_parusdata_primitive(&drop));
 	lexicon_define(lex, "FIND", new_parusdata_primitive(&find));
-	lexicon_define(lex, "EQV?", new_parusdata_primitive(&eqv));
 
-	// reflection
-	lexicon_define(lex, "INTEGER?", new_parusdata_primitive(&is_top_integer));
-	lexicon_define(lex, "DECIMAL?", new_parusdata_primitive(&is_top_decimal));
-	lexicon_define(lex, "MACRO?", new_parusdata_primitive(&is_top_macro));
-	lexicon_define(lex, "SYMBOL?", new_parusdata_primitive(&is_top_symbol));
-	lexicon_define(lex, "QUOTED?", new_parusdata_primitive(&is_top_quoted));
 
-	// arithmatics
 	lexicon_define(lex, "+", new_parusdata_primitive(&add));
 	lexicon_define(lex, "-", new_parusdata_primitive(&subtract));
 	lexicon_define(lex, "*", new_parusdata_primitive(&multiply));
@@ -862,32 +875,30 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, ">", new_parusdata_primitive(&greater_than));
 	lexicon_define(lex, "ROUND", new_parusdata_primitive(&round_value));
 
-	// I/O
+
+	lexicon_define(lex, "INTEGER?", new_parusdata_primitive(&is_top_integer));
+	lexicon_define(lex, "DECIMAL?", new_parusdata_primitive(&is_top_decimal));
+	lexicon_define(lex, "MACRO?", new_parusdata_primitive(&is_top_macro));
+	lexicon_define(lex, "SYMBOL?", new_parusdata_primitive(&is_top_symbol));
+	lexicon_define(lex, "QUOTED?", new_parusdata_primitive(&is_top_quoted));
+
+
 	lexicon_define(lex, "OUT", new_parusdata_primitive(&out));
 	lexicon_define(lex, "OUTLN", new_parusdata_primitive(&outln));
 	lexicon_define(lex, "READ", new_parusdata_primitive(&read));
 	lexicon_define(lex, "GETC", new_parusdata_primitive(&getcharacter));
 	lexicon_define(lex, "PUTC", new_parusdata_primitive(&putcharacter));
 
-	// shortcuts
 	lexicon_define(lex, "DPL", new_parusdata_primitive(&dpl));
-	lexicon_define(lex, "DROP", new_parusdata_primitive(&drop));
 	lexicon_define(lex, "SETAT", new_parusdata_primitive(&setat));
-
-	// debugging
-	lexicon_define(lex, "?stk", new_parusdata_primitive(&stkprint));
-	lexicon_define(lex, "?lex", new_parusdata_primitive(&lexprint));
-
-	// syntatic forms
 	lexicon_define(lex, "FOR", new_parusdata_primitive(&for_macro));
-
-	lexicon_define(lex, "END-CASE", new_parusdata_primitive(&end_case_macro));
 	lexicon_define(lex, "CASE", new_parusdata_quote(new_parusdata_symbol("CASE")));
-
-	// misc
+	lexicon_define(lex, "END-CASE", new_parusdata_primitive(&end_case_macro));
 	lexicon_define(lex, "NOW", new_parusdata_primitive(&now));
 	lexicon_define(lex, "QUIT", new_parusdata_primitive(&quit));
 
+	lexicon_define(lex, "?stk", new_parusdata_primitive(&stkprint));
+	lexicon_define(lex, "?lex", new_parusdata_primitive(&lexprint));
 	lexicon_define(lex, "?help", new_parusdata_primitive(&help));
 
 	return lex;
