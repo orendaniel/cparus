@@ -18,10 +18,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "parus.h"
 
-// store the address the primitive which called parus_apply
-static primitive_t apply_caller;
+// store the address of the base procedure which called parus_apply
+static base_prc_t apply_caller;
 
-// back door operation to implement primitives like apply top
+// back door operation to implement base procedures like apply top
 static applier_t apply_op;
 
 // HELPERS
@@ -39,7 +39,7 @@ static char* copy_string(char* s) {
 	return ns;
 }
 
-static char is_usermacro(char* s) {
+static char is_user_procedure(char* s) {
 	return s[0] == LP_CHAR && (s[1] == '\0' || isspace(s[1]));
 }
 
@@ -76,7 +76,7 @@ static ParusData* quotate_symbol(char* expr) {
 
 static char is_symbol(char* s) {
 	return !is_termination(s)
-		&& !is_usermacro(s)
+		&& !is_user_procedure(s)
 		&& !is_integer(s) 
 		&& !is_decimal(s) 
 		&& !is_quoted(s)
@@ -96,79 +96,79 @@ static void clear_buffer(char* buffer, int size) {
 }
 
 
-/* inserts an instruction to a mcr */
-static void insert_instruction(ParusData* mcr, ParusData* instr) {
-	if (mcr->type != USER_MACRO) {
-		fprintf(stderr, "CANNOT INSERT INSTRUCTION FOR A NON MACRO\n");
+/* inserts an instruction to a prc */
+static void insert_instruction(ParusData* prc, ParusData* instr) {
+	if (prc->type != USER_PROCEDURE) {
+		fprintf(stderr, "CANNOT INSERT INSTRUCTION FOR A NON PROCEDURE\n");
 		return;
 	}
 	
-	if (mcr->data.usermacro.size < mcr->data.usermacro.max -1)
-			mcr->data.usermacro.instructions[mcr->data.usermacro.size++] = instr;
+	if (prc->data.user_prc.size < prc->data.user_prc.max -1)
+			prc->data.user_prc.instructions[prc->data.user_prc.size++] = instr;
 	
 	else {
-		mcr->data.usermacro.instructions = realloc(mcr->data.usermacro.instructions,
-					(mcr->data.usermacro.max + USER_MACRO_INSTR_GROWTH) * sizeof(ParusData));
+		prc->data.user_prc.instructions = realloc(prc->data.user_prc.instructions,
+					(prc->data.user_prc.max + USER_PROCEDURE_INSTR_GROWTH) * sizeof(ParusData));
 
-		if (mcr->data.usermacro.instructions != 0) {
-			mcr->data.usermacro.max += USER_MACRO_INSTR_GROWTH;
-			mcr->data.usermacro.instructions[mcr->data.usermacro.size++] = instr;
+		if (prc->data.user_prc.instructions != 0) {
+			prc->data.user_prc.max += USER_PROCEDURE_INSTR_GROWTH;
+			prc->data.user_prc.instructions[prc->data.user_prc.size++] = instr;
 		}
 	}
 }
 
-static ParusData* init_macro() {
-	ParusData* 	mcr 	= calloc(1, sizeof(ParusData));
+static ParusData* init_user_prc() {
+	ParusData* 	prc 	= calloc(1, sizeof(ParusData));
 
-	if (mcr != NULL) {
-		mcr->data.usermacro.instructions 	= calloc(USER_MACRO_INSTR_GROWTH, sizeof(ParusData));
-		mcr->data.usermacro.max 			= USER_MACRO_INSTR_GROWTH;
-		mcr->data.usermacro.size 			= 0;
-		mcr->type 							= USER_MACRO;
+	if (prc != NULL) {
+		prc->data.user_prc.instructions	= calloc(USER_PROCEDURE_INSTR_GROWTH, sizeof(ParusData));
+		prc->data.user_prc.max 			= USER_PROCEDURE_INSTR_GROWTH;
+		prc->data.user_prc.size 		= 0;
+		prc->type 						= USER_PROCEDURE;
 	}
 
-	return mcr;
+	return prc;
 }
 
 /*
-make a new parusdata as a usermacro
-A usermacro is represented by a list of ParusData that are evaluated sequentially
+make a new parusdata as a user defined procedure
+A user defined procedure is represented by a list of ParusData that are evaluated sequentially
 
-expr is the textual representation of the macro with the openning emitted sense it is unneeded 
+expr is the textual representation of the procedure with the openning emitted sense it is unneeded 
 Example: DPL * )
 expr must be mutable
 */
-static ParusData* make_usermacro(char* expr) {
-	Stack* 	mcrstk 		= new_stack(); // a stack to store external macros
+static ParusData* make_user_prc(char* expr) {
+	Stack* 	prcstk 		= new_stack(); // a stack to store external procedures
 	char* 	token 		= strtok(expr, " ");
 	char 	terminated 	= 0;
 
 
-	if (mcrstk == NULL) {
-		fprintf(stderr, "CANNOT ALLOCATE MACRO\n");
+	if (prcstk == NULL) {
+		fprintf(stderr, "CANNOT ALLOCATE PROCEDURE\n");
 		return NULL;
 	}
 	
-	stack_push(mcrstk, init_macro());
+	stack_push(prcstk, init_user_prc());
 
 	while (token != NULL) {
 		
-		if (mcrstk->size == 0)
+		if (prcstk->size == 0)
 			break;
 
-		ParusData* mcr = mcrstk->items[mcrstk->size -1];
+		ParusData* prc = prcstk->items[prcstk->size -1];
 
-		if (is_usermacro(token))
-			stack_push(mcrstk, init_macro());
+		if (is_user_procedure(token))
+			stack_push(prcstk, init_user_prc());
 			
 		else if (is_termination(token)) {
-			if (mcrstk->size > 1) {
-				ParusData* internal = stack_pull(mcrstk);
-				ParusData* external = stack_pull(mcrstk);
+			if (prcstk->size > 1) {
+				ParusData* internal = stack_pull(prcstk);
+				ParusData* external = stack_pull(prcstk);
 
 				insert_instruction(external, internal);
 
-				stack_push(mcrstk, external);
+				stack_push(prcstk, external);
 			}
 			else {
 				terminated = 1;
@@ -179,20 +179,20 @@ static ParusData* make_usermacro(char* expr) {
 
 
 		else if (is_integer(token))
-			insert_instruction(mcr, new_parusdata_integer(atoi(token)));
+			insert_instruction(prc, new_parusdata_integer(atoi(token)));
 
 		else if (is_decimal(token))
-			insert_instruction(mcr, new_parusdata_decimal(atof(token)));
+			insert_instruction(prc, new_parusdata_decimal(atof(token)));
 
 		else if (is_quoted(token) && is_symbol(token + quote_count(token)))
-			insert_instruction(mcr, new_parusdata_quote(quotate_symbol(token)));
+			insert_instruction(prc, new_parusdata_quote(quotate_symbol(token)));
 
 		else if (is_symbol(token))
-			insert_instruction(mcr, new_parusdata_symbol(token));
+			insert_instruction(prc, new_parusdata_symbol(token));
 
 		else {
-			fprintf(stderr, "INVALID TOKEN IN USER DEFINED MACRO - %s\n", expr);
-			free_stack(mcrstk);
+			fprintf(stderr, "INVALID TOKEN IN USER DEFINED PROCEDURE - %s\n", expr);
+			free_stack(prcstk);
 			return NULL;
 		}
 
@@ -200,15 +200,15 @@ static ParusData* make_usermacro(char* expr) {
 	}
 		
 	if (!terminated) {
-		fprintf(stderr, "UN-TERMINATED MACRO\n");
-		free_stack(mcrstk);
+		fprintf(stderr, "UN-TERMINATED PROCEDURE\n");
+		free_stack(prcstk);
 		return NULL;
 	}
 
 
-	ParusData* pd = stack_pull(mcrstk);
+	ParusData* pd = stack_pull(prcstk);
 
-	free_stack(mcrstk);
+	free_stack(prcstk);
 
 	return pd;
 }
@@ -229,16 +229,16 @@ static int eval(char* expr, Stack* stk, Lexicon* lex) {
 
 	/* invalid syntax */
 	if (is_termination(expr)) {
-		fprintf(stderr, "EXPECTED MACRO\n");
+		fprintf(stderr, "EXPECTED PROCEDURE\n");
 		return 1;
 	}
 
 	/* self evaluating forms */
-	if (is_usermacro(expr)) {
-		ParusData* mcr = new_parusdata_usermacro(expr);
-		if (mcr == NULL)
+	if (is_user_procedure(expr)) {
+		ParusData* prc = new_parusdata_user_prc(expr);
+		if (prc == NULL)
 			return 0;
-		stack_push(stk, mcr);
+		stack_push(stk, prc);
 
 	}
 
@@ -291,20 +291,20 @@ ParusData* parusdata_copy(ParusData* original) {
 	else if (original->type == QUOTED)
 		return new_parusdata_quote(parusdata_copy(parusdata_unquote(original)));
 
-	else if (original->type == PRIMITIVE_MACRO)
-		return new_parusdata_primitive(original->data.primitive);
+	else if (original->type == BASE_PROCEDURE)
+		return new_parusdata_base_prc(original->data.base_prc);
 
-	else if (original->type == USER_MACRO) {
-		ParusData* mcr 	= calloc(1, sizeof(ParusData));
-		mcr->type 		= USER_MACRO;
+	else if (original->type == USER_PROCEDURE) {
+		ParusData* prc 	= calloc(1, sizeof(ParusData));
+		prc->type 		= USER_PROCEDURE;
 
-		mcr->data.usermacro.size 		= original->data.usermacro.size;
-		mcr->data.usermacro.instructions = calloc(mcr->data.usermacro.size, sizeof(ParusData));
+		prc->data.user_prc.size 		= original->data.user_prc.size;
+		prc->data.user_prc.instructions = calloc(prc->data.user_prc.size, sizeof(ParusData));
 
-		for (int i = 0; i < mcr->data.usermacro.size; i++)
-			mcr->data.usermacro.instructions[i] = parusdata_copy(original->data.usermacro.instructions[i]);
+		for (int i = 0; i < prc->data.user_prc.size; i++)
+			prc->data.user_prc.instructions[i] = parusdata_copy(original->data.user_prc.instructions[i]);
 
-		return mcr;
+		return prc;
 	}
 	return NULL;
 }
@@ -358,8 +358,8 @@ char* parusdata_getsymbol(ParusData* pd) {
 ParusData* new_parusdata_quote(ParusData* quoted) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
-		pd->data.quoted 	= quoted;
-		pd->type 			= QUOTED;
+		pd->data.quoted = quoted;
+		pd->type 		= QUOTED;
 	}
 	return pd;
 }
@@ -369,22 +369,22 @@ ParusData* parusdata_unquote(ParusData* pd) {
 	return pd->data.quoted;
 }
 
-/* makes a new parusdata as a primitive macro */ 
-ParusData* new_parusdata_primitive(primitive_t p) {
+/* makes a new parusdata as a base procedure */ 
+ParusData* new_parusdata_base_prc(base_prc_t p) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
-		pd->data.primitive 	= p;
-		pd->type 			= PRIMITIVE_MACRO;
+		pd->data.base_prc 	= p;
+		pd->type 			= BASE_PROCEDURE;
 	}
 	return pd;
 }
 
-/* returns a new user defined macro */
-ParusData* new_parusdata_usermacro(char* expr) {
+/* returns a new user defined procedure */
+ParusData* new_parusdata_user_prc(char* expr) {
 	char* 		nexpr 	= copy_string(expr);
-	ParusData* 	mcr 	= make_usermacro(nexpr + 2);
+	ParusData* 	prc 	= make_user_prc(nexpr + 2);
 	free(nexpr);
-	return mcr;
+	return prc;
 }
 
 /* free the parusdata */
@@ -396,11 +396,11 @@ void free_parusdata(ParusData* pd) {
 		else if (pd->type == QUOTED)
 			free_parusdata((ParusData*)pd->data.quoted);
 
-		else if (pd->type == USER_MACRO) {
-			for (int i = 0; i < pd->data.usermacro.size; i++) 
-				free_parusdata(pd->data.usermacro.instructions[i]);
+		else if (pd->type == USER_PROCEDURE) {
+			for (int i = 0; i < pd->data.user_prc.size; i++) 
+				free_parusdata(pd->data.user_prc.instructions[i]);
 
-			free(pd->data.usermacro.instructions);
+			free(pd->data.user_prc.instructions);
 		}	
 
 		free(pd);
@@ -527,8 +527,8 @@ Lexicon* new_lexicon() {
 	Lexicon* lex = calloc(1, sizeof(Lexicon));
 
 	lex->size = 0;
-	lex->entries = calloc(LEXICON_GROWTH, sizeof(struct entry));
-	lex->max = LEXICON_GROWTH;
+	lex->entries 	= calloc(LEXICON_GROWTH, sizeof(struct entry));
+	lex->max 		= LEXICON_GROWTH;
 
 	return lex;
 }
@@ -640,7 +640,7 @@ sets apply_caller and apply_op.
 make sure to call parus_set_applier(NULL, NULL), 
 after calling it in order to reset the values.
 */
-void parus_set_applier(primitive_t p, applier_t a) {
+void parus_set_applier(base_prc_t p, applier_t a) {
 	apply_caller 	= p;
 	apply_op		= a;
 }
@@ -650,7 +650,7 @@ applies a parusdata
 
 the function will automatically free pd if needed
 
-goto is used to optimize the last call in the macro
+goto is used to optimize the last call in the procedure 
 
 */
 int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
@@ -663,7 +663,7 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 
 	recall:
 
-	// first call of an applying primitive
+	// first call of an applying base procedure
 	if (pd == NULL && apply_op != NULL && apply_caller != NULL)
 		pd = apply_op(stk, lex);
 
@@ -687,10 +687,10 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		free_parusdata(pd);
 	}
 
-	else if (pd->type == PRIMITIVE_MACRO) {
+	else if (pd->type == BASE_PROCEDURE) {
 		// dont allow mutual recursion between applier and parus_apply
-		if (apply_caller != pd->data.primitive) {
-			int result = (*pd->data.primitive)(stk, lex);
+		if (apply_caller != pd->data.base_prc) {
+			int result = (*pd->data.base_prc)(stk, lex);
 			if (result)
 				fprintf(stderr, "ERROR\n");
 			free_parusdata(pd);
@@ -704,19 +704,19 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		}
 	}
 
-	else if (pd->type == USER_MACRO) {
+	else if (pd->type == USER_PROCEDURE) {
 
-		if (pd->data.usermacro.size == 0) {
+		if (pd->data.user_prc.size == 0) {
 			free_parusdata(pd);
 			return 0;
 		}
 
 
-		// do all the instruction in the macro except the last instruction
-		for (int i = 0; i < pd->data.usermacro.size -1; i++) {
+		// do all the instruction in the procedure except the last instruction
+		for (int i = 0; i < pd->data.user_prc.size -1; i++) {
 			
 			// if not self evaluating instruction than apply it
-			ParusData* instr = pd->data.usermacro.instructions[i];
+			ParusData* instr = pd->data.user_prc.instructions[i];
 			if (instr->type == SYMBOL || instr->type == QUOTED) {
 
 				call_depth++;
@@ -734,7 +734,7 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 
 		}
 
-		ParusData* 	last 		= pd->data.usermacro.instructions[pd->data.usermacro.size -1];
+		ParusData* 	last 		= pd->data.user_prc.instructions[pd->data.user_prc.size -1];
 		ParusData* 	next_pd		= parusdata_copy(last);
 
 		free_parusdata(pd);

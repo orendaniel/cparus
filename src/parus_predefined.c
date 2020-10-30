@@ -133,7 +133,7 @@ static int quote(void* stk, void* lex) {
 	return 0;
 }
 
-static int if_macro(void* stk, void* lex) {
+static int if_procedure(void* stk, void* lex) {
 	ParusData* do_false	= stack_pull(stk);
 	ParusData* do_true 	= stack_pull(stk);
 	ParusData* cond		= stack_pull(stk);
@@ -401,8 +401,8 @@ static int is_top_decimal(void* stk, void* lex) {
 
 }
 
-static int is_top_macro(void* stk, void* lex) {
-	REFLECTION_TEMPLATE(pd->type == USER_MACRO || pd->type == PRIMITIVE_MACRO);
+static int is_top_procedure(void* stk, void* lex) {
+	REFLECTION_TEMPLATE(pd->type == USER_PROCEDURE || pd->type == BASE_PROCEDURE);
 	return 0;
 }
 
@@ -519,8 +519,8 @@ static int setat(void* stk, void* lex) {
 
 	}
 
-	Stack* pstk = (Stack*)stk;
-	int i = pstk->size - (parusdata_tointeger(index) +1);
+	Stack* pstk	= (Stack*)stk;
+	int i 		= pstk->size - (parusdata_tointeger(index) +1);
 	if (i < pstk->size && i >= 0) {
 		ParusData* old = pstk->items[i];
 		free_parusdata(old);
@@ -538,7 +538,7 @@ static int setat(void* stk, void* lex) {
 }
 
 
-static int for_macro(void* stk, void* lex) {
+static int for_procedure(void* stk, void* lex) {
 
 	ParusData* fn 	= stack_pull(stk);
 	ParusData* inc 	= stack_pull(stk);
@@ -550,7 +550,7 @@ static int for_macro(void* stk, void* lex) {
 	if (fn == NULL || inc == NULL || cmp == NULL || max == NULL || min == NULL || sym == NULL 
 			|| inc->type != INTEGER || min->type != INTEGER || max->type != INTEGER || 
 			sym->type != SYMBOL || 
-			!(cmp->type == SYMBOL || cmp->type == USER_MACRO || cmp->type == PRIMITIVE_MACRO)) {
+			!(cmp->type == SYMBOL || cmp->type == USER_PROCEDURE || cmp->type == BASE_PROCEDURE)) {
 		
 		fprintf(stderr, "WRONG TYPES OF PARAMETERS GIVEN\n");
 		fprintf(stderr, "SYMBOL MIN MAX CMP INC FN\n");
@@ -601,8 +601,8 @@ static int for_macro(void* stk, void* lex) {
 }
 
 
-static int end_case_macro(void* stk, void* lex) {
-	Stack* pstk = (Stack*)stk;
+static int end_case_procedure(void* stk, void* lex) {
+	Stack* pstk 		= (Stack*)stk;
 	ParusData* case_sym = new_parusdata_symbol("CASE");
 
 	int index = -1;
@@ -693,50 +693,50 @@ static int help(void* stk, void* lex) {
 Lexicon* predefined_lexicon() {
 	Lexicon* lex = new_lexicon();
 
-	lexicon_define(lex, "DEF", new_parusdata_primitive(&define));
-	lexicon_define(lex, "DEL", new_parusdata_primitive(&delete));
-	lexicon_define(lex, "!", new_parusdata_primitive(&apply_top));
-	lexicon_define(lex, "QUOTE", new_parusdata_primitive(&quote));
-	lexicon_define(lex, "IF", new_parusdata_primitive(&if_macro));
-	lexicon_define(lex, "EQV?", new_parusdata_primitive(&eqv));
-	lexicon_define(lex, "@", new_parusdata_primitive(&fetch));
-	lexicon_define(lex, "@.", new_parusdata_primitive(&fetch_copy));
-	lexicon_define(lex, "LEN", new_parusdata_primitive(&length));
-	lexicon_define(lex, "DROP", new_parusdata_primitive(&drop));
-	lexicon_define(lex, "FIND", new_parusdata_primitive(&find));
+	lexicon_define(lex, "DEF", new_parusdata_base_prc(&define));
+	lexicon_define(lex, "DEL", new_parusdata_base_prc(&delete));
+	lexicon_define(lex, "!", new_parusdata_base_prc(&apply_top));
+	lexicon_define(lex, "QUOTE", new_parusdata_base_prc(&quote));
+	lexicon_define(lex, "IF", new_parusdata_base_prc(&if_procedure));
+	lexicon_define(lex, "EQV?", new_parusdata_base_prc(&eqv));
+	lexicon_define(lex, "@", new_parusdata_base_prc(&fetch));
+	lexicon_define(lex, "@.", new_parusdata_base_prc(&fetch_copy));
+	lexicon_define(lex, "LEN", new_parusdata_base_prc(&length));
+	lexicon_define(lex, "DROP", new_parusdata_base_prc(&drop));
+	lexicon_define(lex, "FIND", new_parusdata_base_prc(&find));
 
-	lexicon_define(lex, "+", new_parusdata_primitive(&add));
-	lexicon_define(lex, "-", new_parusdata_primitive(&subtract));
-	lexicon_define(lex, "*", new_parusdata_primitive(&multiply));
-	lexicon_define(lex, "/", new_parusdata_primitive(&divide));
-	lexicon_define(lex, "^", new_parusdata_primitive(&powerof));
-	lexicon_define(lex, "=", new_parusdata_primitive(&equal));
-	lexicon_define(lex, "<", new_parusdata_primitive(&less_than));
-	lexicon_define(lex, ">", new_parusdata_primitive(&greater_than));
-	lexicon_define(lex, "ROUND", new_parusdata_primitive(&round_value));
+	lexicon_define(lex, "+", new_parusdata_base_prc(&add));
+	lexicon_define(lex, "-", new_parusdata_base_prc(&subtract));
+	lexicon_define(lex, "*", new_parusdata_base_prc(&multiply));
+	lexicon_define(lex, "/", new_parusdata_base_prc(&divide));
+	lexicon_define(lex, "^", new_parusdata_base_prc(&powerof));
+	lexicon_define(lex, "=", new_parusdata_base_prc(&equal));
+	lexicon_define(lex, "<", new_parusdata_base_prc(&less_than));
+	lexicon_define(lex, ">", new_parusdata_base_prc(&greater_than));
+	lexicon_define(lex, "ROUND", new_parusdata_base_prc(&round_value));
 
-	lexicon_define(lex, "INTEGER?", new_parusdata_primitive(&is_top_integer));
-	lexicon_define(lex, "DECIMAL?", new_parusdata_primitive(&is_top_decimal));
-	lexicon_define(lex, "MACRO?", new_parusdata_primitive(&is_top_macro));
-	lexicon_define(lex, "SYMBOL?", new_parusdata_primitive(&is_top_symbol));
-	lexicon_define(lex, "QUOTED?", new_parusdata_primitive(&is_top_quoted));
+	lexicon_define(lex, "INTEGER?", new_parusdata_base_prc(&is_top_integer));
+	lexicon_define(lex, "DECIMAL?", new_parusdata_base_prc(&is_top_decimal));
+	lexicon_define(lex, "PROCEDURE?", new_parusdata_base_prc(&is_top_procedure));
+	lexicon_define(lex, "SYMBOL?", new_parusdata_base_prc(&is_top_symbol));
+	lexicon_define(lex, "QUOTED?", new_parusdata_base_prc(&is_top_quoted));
 
-	lexicon_define(lex, "OUT", new_parusdata_primitive(&out));
-	lexicon_define(lex, "OUTLN", new_parusdata_primitive(&outln));
-	lexicon_define(lex, "READ", new_parusdata_primitive(&read));
-	lexicon_define(lex, "GETC", new_parusdata_primitive(&getcharacter));
-	lexicon_define(lex, "PUTC", new_parusdata_primitive(&putcharacter));
+	lexicon_define(lex, "OUT", new_parusdata_base_prc(&out));
+	lexicon_define(lex, "OUTLN", new_parusdata_base_prc(&outln));
+	lexicon_define(lex, "READ", new_parusdata_base_prc(&read));
+	lexicon_define(lex, "GETC", new_parusdata_base_prc(&getcharacter));
+	lexicon_define(lex, "PUTC", new_parusdata_base_prc(&putcharacter));
 
-	lexicon_define(lex, "DPL", new_parusdata_primitive(&dpl));
-	lexicon_define(lex, "SETAT", new_parusdata_primitive(&setat));
-	lexicon_define(lex, "FOR", new_parusdata_primitive(&for_macro));
+	lexicon_define(lex, "DPL", new_parusdata_base_prc(&dpl));
+	lexicon_define(lex, "SETAT", new_parusdata_base_prc(&setat));
+	lexicon_define(lex, "FOR", new_parusdata_base_prc(&for_procedure));
 	lexicon_define(lex, "CASE", new_parusdata_quote(new_parusdata_symbol("CASE")));
-	lexicon_define(lex, "END-CASE", new_parusdata_primitive(&end_case_macro));
-	lexicon_define(lex, "QUIT", new_parusdata_primitive(&quit));
+	lexicon_define(lex, "END-CASE", new_parusdata_base_prc(&end_case_procedure));
+	lexicon_define(lex, "QUIT", new_parusdata_base_prc(&quit));
 
-	lexicon_define(lex, "?stk", new_parusdata_primitive(&stkprint));
-	lexicon_define(lex, "?lex", new_parusdata_primitive(&lexprint));
-	lexicon_define(lex, "?help", new_parusdata_primitive(&help));
+	lexicon_define(lex, "?stk", new_parusdata_base_prc(&stkprint));
+	lexicon_define(lex, "?lex", new_parusdata_base_prc(&lexprint));
+	lexicon_define(lex, "?help", new_parusdata_base_prc(&help));
 
 	return lex;
 
