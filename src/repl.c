@@ -98,7 +98,7 @@ char* repl_read() {
 		input = realloc(input, input_len + addition_len);
 
 		if (input == NULL) {
-			printf("Cannot read command\n");
+			fprintf(stderr, "CANNOT READ COMMAND\n");
 			exit(EXIT_FAILURE);
 		}
 
@@ -149,7 +149,7 @@ int main(int argc, char** argv) {
 			free(text);
 		}
 		else
-			printf("Cannot open file %s\nmake sure that the file exists\n", file_name);
+			fprintf(stderr, "CANNOT OPEN FILE %s\nMAKE SURE THAT THE FILE EXISTS\n", file_name);
 	}
 
 	if (!norepl && !notitle) 

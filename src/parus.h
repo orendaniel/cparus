@@ -35,7 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define USER_PROCEDURE_INSTR_GROWTH 10
 
-#define MAXIMUM_CALL_DEPTH 25000
+#define MAXIMUM_CALL_DEPTH 50000
 
 #define HELP_MESSAGE "\nParus - Postfixed Reprogrammable Stack language\n" \
 	"Visit https://gitlab.com/oren_daniel/cparus for instructions and details.\n" \
