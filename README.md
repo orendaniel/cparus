@@ -73,3 +73,5 @@ b ! OUTLN
 DEF
 
 3.14159 'π DEF
+
+See examples at examples/ folder
