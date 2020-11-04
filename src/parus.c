@@ -662,7 +662,7 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		return 1;
 	}
 
-	// if apply operation given, and pd was not given
+	// back door for base procedures that use apply themselves
 	if (pd == NULL && apply_op != NULL && apply_caller != NULL)
 		pd = apply_op(stk, lex);
 
