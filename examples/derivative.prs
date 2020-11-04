@@ -1,0 +1,9 @@
+( 
+	'drv_f define
+	dpl 0.001 + drv_f 1 @ drv_f - 0.001 /
+	'drv_f delete
+) 'drv define
+
+( dpl * ) 'parabola define
+
+5 'parabola drv outln

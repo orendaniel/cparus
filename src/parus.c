@@ -656,16 +656,17 @@ goto is used to optimize the last call in the procedure
 int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 	static int call_depth = 0; // stores the call history
 
+
 	if (call_depth > MAXIMUM_CALL_DEPTH) {
 		fprintf(stderr, "INSUFFICIENT DATA FOR MEANINGFUL ANSWER\n");
 		return 1;
 	}
 
-	recall:
-
-	// first call of an applying base procedure
+	// if apply operation given, and pd was not given
 	if (pd == NULL && apply_op != NULL && apply_caller != NULL)
 		pd = apply_op(stk, lex);
+
+	recall:
 
 	if (pd == NULL || pd->type == NONE)
 		return 0;
