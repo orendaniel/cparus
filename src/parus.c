@@ -370,10 +370,10 @@ ParusData* parusdata_unquote(ParusData* pd) {
 }
 
 /* makes a new parusdata as a base procedure */ 
-ParusData* new_parusdata_base_prc(base_prc_t p) {
+ParusData* new_parusdata_base_prc(base_prc_t prc) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
-		pd->data.base_prc 	= p;
+		pd->data.base_prc 	= prc;
 		pd->type 			= BASE_PROCEDURE;
 	}
 	return pd;
@@ -640,9 +640,9 @@ sets apply_caller and apply_op.
 make sure to call parus_set_applier(NULL, NULL), 
 after calling it in order to reset the values.
 */
-void parus_set_applier(base_prc_t p, applier_t a) {
-	apply_caller 	= p;
-	apply_op		= a;
+void parus_set_applier(base_prc_t caller, applier_t applier) {
+	apply_caller 	= caller;
+	apply_op		= applier;
 }
 
 /*

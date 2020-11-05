@@ -115,7 +115,7 @@ ParusData* 		new_parusdata_symbol(char* s);
 char* 			parusdata_getsymbol(ParusData* pd);
 ParusData* 		new_parusdata_quote(ParusData* quoted);
 ParusData* 		parusdata_unquote(ParusData* pd);
-ParusData* 		new_parusdata_base_prc(base_prc_t p);
+ParusData* 		new_parusdata_base_prc(base_prc_t prc);
 ParusData* 		new_parusdata_user_prc(char* expr);
 void 			free_parusdata(ParusData* pd);
 void 			print_parusdata(ParusData* pd);
@@ -136,7 +136,7 @@ void 		free_lexicon(Lexicon* lex);
 void 		print_lexicon(Lexicon* lex);
 
 int 	parus_validate_expression(char* str);
-void 	parus_set_applier(base_prc_t p, applier_t a);
+void 	parus_set_applier(base_prc_t caller, applier_t applier);
 int 	parus_apply(ParusData* pd, Stack* stk, Lexicon* lex);
 void 	parus_evaluate(char* input, Stack* stk, Lexicon* lex);
 
