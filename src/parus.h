@@ -33,7 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define STACK_GROWTH 	50
 #define LEXICON_GROWTH 	50
 
-#define USER_PROCEDURE_INSTR_GROWTH 10
+#define USEROP_INSTR_GROWTH 10
 
 #define MAXIMUM_CALL_DEPTH 50000
 
@@ -46,15 +46,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define TITLE_MESSAGE "CParus version 1.0\n" \
 	"CParus is free software under the GPLv3 license.\n" \
 	"Copyright (C) 2020  Oren Daniel\n" \
-	"Type ?help procedure for help, or in the command line enter 'parus -help.'\n\n"
+	"Type ?help for help, or in the command line enter 'parus -help.'\n\n"
 
 
 
 typedef long 	integer_t;
 typedef double 	decimal_t;
 
-// base procedure type
-typedef int (*base_prc_t)(void*, void*);
+typedef int (*baseop_t)(void*, void*);
 
 typedef struct {
 	union {
@@ -62,13 +61,13 @@ typedef struct {
 		decimal_t 	decimal;
 		char* 		symbol;
 		void* 		quoted; // pointer to ParusData
-		base_prc_t	base_prc;
+		baseop_t	baseop;
 
 		struct { 
 			void** 	instructions; //array of ParusData*
 			size_t 	max;
 			size_t 	size;
-		} user_prc;
+		} userop;
 
 	} data;
 	enum {
@@ -76,8 +75,8 @@ typedef struct {
 		DECIMAL,
 		SYMBOL,
 		QUOTED,
-		BASE_PROCEDURE,
-		USER_PROCEDURE,
+		BASEOP,
+		USEROP,
 		NONE // marks the instance as freed
 	} type;
 } ParusData;
@@ -115,8 +114,8 @@ ParusData* 		new_parusdata_symbol(char* s);
 char* 			parusdata_getsymbol(ParusData* pd);
 ParusData* 		new_parusdata_quote(ParusData* quoted);
 ParusData* 		parusdata_unquote(ParusData* pd);
-ParusData* 		new_parusdata_base_prc(base_prc_t prc);
-ParusData* 		new_parusdata_user_prc(char* expr);
+ParusData* 		new_parusdata_baseop(baseop_t op);
+ParusData* 		new_parusdata_userop(char* expr);
 void 			free_parusdata(ParusData* pd);
 void 			print_parusdata(ParusData* pd);
 
@@ -136,7 +135,7 @@ void 		free_lexicon(Lexicon* lex);
 void 		print_lexicon(Lexicon* lex);
 
 int 	parus_validate_expression(char* str);
-void 	parus_set_applier(base_prc_t caller, applier_t applier);
+void 	parus_set_applier(baseop_t caller, applier_t applier);
 int 	parus_apply(ParusData* pd, Stack* stk, Lexicon* lex);
 void 	parus_evaluate(char* input, Stack* stk, Lexicon* lex);
 
