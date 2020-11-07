@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 
-	Stack*		stk = new_stack();
+	Stack*		stk = make_stack();
 	Lexicon* 	lex = predefined_lexicon();
 
 	if (file_name != NULL) {

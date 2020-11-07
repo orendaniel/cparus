@@ -69,9 +69,9 @@ static char is_quoted(char* s) {
 
 static ParusData* quotate_symbol(char* expr) {
 	if (expr[1] != QUOTE_CHAR)
-		return new_parusdata_symbol(expr +1);
+		return make_parus_symbol(expr +1);
 	else
-		return new_parusdata_quote(quotate_symbol(expr +1));
+		return make_parus_quote(quotate_symbol(expr +1));
 }
 
 static char is_symbol(char* s) {
@@ -139,7 +139,7 @@ Example: DPL * )
 expr must be mutable
 */
 static ParusData* make_userop(char* expr) {
-	Stack* 	opstk 		= new_stack(); // a stack to store nested operators
+	Stack* 	opstk 		= make_stack(); // a stack to store nested operators
 	char* 	token 		= strtok(expr, " ");
 	char 	terminated 	= 0;
 
@@ -179,16 +179,16 @@ static ParusData* make_userop(char* expr) {
 
 
 		else if (is_integer(token))
-			insert_instruction(op, new_parusdata_integer(atoi(token)));
+			insert_instruction(op, make_parus_integer(atoi(token)));
 
 		else if (is_decimal(token))
-			insert_instruction(op, new_parusdata_decimal(atof(token)));
+			insert_instruction(op, make_parus_decimal(atof(token)));
 
 		else if (is_quoted(token) && is_symbol(token + quote_count(token)))
-			insert_instruction(op, new_parusdata_quote(quotate_symbol(token)));
+			insert_instruction(op, make_parus_quote(quotate_symbol(token)));
 
 		else if (is_symbol(token))
-			insert_instruction(op, new_parusdata_symbol(token));
+			insert_instruction(op, make_parus_symbol(token));
 
 		else {
 			fprintf(stderr, "INVALID TOKEN IN USER DEFINED OPERATOR - %s\n", expr);
@@ -235,7 +235,7 @@ static int eval(char* expr, Stack* stk, Lexicon* lex) {
 
 	/* self evaluating forms */
 	if (is_user_operator(expr)) {
-		ParusData* op = new_parusdata_userop(expr);
+		ParusData* op = make_parus_userop(expr);
 		if (op == NULL)
 			return 0;
 		stack_push(stk, op);
@@ -243,10 +243,10 @@ static int eval(char* expr, Stack* stk, Lexicon* lex) {
 	}
 
 	else if (is_integer(expr)) 
-		stack_push(stk, new_parusdata_integer(atoi(expr)));
+		stack_push(stk, make_parus_integer(atoi(expr)));
 
 	else if (is_decimal(expr))
-		stack_push(stk, new_parusdata_decimal(atof(expr)));
+		stack_push(stk, make_parus_decimal(atof(expr)));
 
 	/* quoted forms */
 	else if (is_quoted(expr)) {
@@ -280,19 +280,19 @@ static int eval(char* expr, Stack* stk, Lexicon* lex) {
 /* Returns a new copy of ParusData* */
 ParusData* parusdata_copy(ParusData* original) {
 	if (original->type == INTEGER)
-		return new_parusdata_integer(parusdata_tointeger(original));
+		return make_parus_integer(parusdata_tointeger(original));
 
 	else if (original->type == DECIMAL)
-		return new_parusdata_decimal(parusdata_todecimal(original));
+		return make_parus_decimal(parusdata_todecimal(original));
 
 	else if (original->type == SYMBOL)
-		return new_parusdata_symbol(parusdata_getsymbol(original));
+		return make_parus_symbol(parusdata_getsymbol(original));
 
 	else if (original->type == QUOTED)
-		return new_parusdata_quote(parusdata_copy(parusdata_unquote(original)));
+		return make_parus_quote(parusdata_copy(parusdata_unquote(original)));
 
 	else if (original->type == BASEOP)
-		return new_parusdata_baseop(original->data.baseop);
+		return make_parus_baseop(original->data.baseop);
 
 	else if (original->type == USEROP) {
 		ParusData* op 	= calloc(1, sizeof(ParusData));
@@ -310,7 +310,7 @@ ParusData* parusdata_copy(ParusData* original) {
 }
 
 /* makes a new parusdata as an integer */ 
-ParusData* new_parusdata_integer(integer_t i) {
+ParusData* make_parus_integer(integer_t i) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
 		pd->data.integer 	= i;
@@ -325,7 +325,7 @@ integer_t parusdata_tointeger(ParusData* pd) {
 }
 
 /* makes a new parusdata as a decimal */ 
-ParusData* new_parusdata_decimal(decimal_t d) {
+ParusData* make_parus_decimal(decimal_t d) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
 		pd->data.decimal 	= d;
@@ -340,7 +340,7 @@ decimal_t parusdata_todecimal(ParusData* pd) {
 }
 
 /* makes a new parusdata as a symbol */ 
-ParusData* new_parusdata_symbol(char* s) {
+ParusData* make_parus_symbol(char* s) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
 		pd->data.symbol 	= copy_string(s);
@@ -355,7 +355,7 @@ char* parusdata_getsymbol(ParusData* pd) {
 }
 
 /* returns a new quoted value */
-ParusData* new_parusdata_quote(ParusData* quoted) {
+ParusData* make_parus_quote(ParusData* quoted) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
 		pd->data.quoted = quoted;
@@ -370,7 +370,7 @@ ParusData* parusdata_unquote(ParusData* pd) {
 }
 
 /* makes a new parusdata as a base operator */ 
-ParusData* new_parusdata_baseop(baseop_t op) {
+ParusData* make_parus_baseop(baseop_t op) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
 		pd->data.baseop 	= op;
@@ -380,7 +380,7 @@ ParusData* new_parusdata_baseop(baseop_t op) {
 }
 
 /* returns a new user defined operator */
-ParusData* new_parusdata_userop(char* expr) {
+ParusData* make_parus_userop(char* expr) {
 	char* 		nexpr 	= copy_string(expr);
 	ParusData* 	op 		= make_userop(nexpr + 2);
 	free(nexpr);
@@ -435,7 +435,7 @@ void print_parusdata(ParusData* pd) {
 makes a new parus stack 
 EVERY ITEM SHOULD BE UNIQUE
 */
-Stack* new_stack() {
+Stack* make_stack() {
 	Stack* stk = calloc(1, sizeof(Stack*));
 
 	stk->max    = STACK_GROWTH;
@@ -523,7 +523,7 @@ void print_stack(Stack* stk) {
 // ----------------------------------------------------------------------------------------------------
 
 /* makes a new lexicon */
-Lexicon* new_lexicon() {
+Lexicon* make_lexicon() {
 	Lexicon* lex = calloc(1, sizeof(Lexicon));
 
 	lex->size = 0;

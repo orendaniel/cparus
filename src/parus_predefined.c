@@ -127,7 +127,7 @@ static int quote(void* stk, void* lex) {
 	}
 
 	else 
-		stack_push(stk, new_parusdata_quote(pd));
+		stack_push(stk, make_parus_quote(pd));
 
 
 	return 0;
@@ -180,7 +180,7 @@ static int eqv(void* stk, void* lex) {
 		
 	}
 
-	stack_push(stk, new_parusdata_integer(equivalent(pd1, pd2)));
+	stack_push(stk, make_parus_integer(equivalent(pd1, pd2)));
 	
 	free_parusdata(pd1);
 	free_parusdata(pd2);
@@ -233,7 +233,7 @@ static int fetch_copy(void* stk, void* lex) {
 }
 
 static int length(void* stk, void* lex) {
-	stack_push(stk, new_parusdata_integer((integer_t) ((Stack*)stk)->size));
+	stack_push(stk, make_parus_integer((integer_t) ((Stack*)stk)->size));
 
 	return 0;
 }
@@ -263,7 +263,7 @@ static int find(void* stk, void* lex) {
 			break;
 		}
 	}
-	stack_push(stk, new_parusdata_integer(pstk->size - (index +1)));
+	stack_push(stk, make_parus_integer(pstk->size - (index +1)));
 
 	free_parusdata(pd);
 	return 0;
@@ -301,19 +301,19 @@ static int find(void* stk, void* lex) {
 
 static int add(void* stk, void* lex) {
 	GET_TWO_NUMBERS;
-	ARTH_FN(new_parusdata_integer, new_parusdata_decimal, +);
+	ARTH_FN(make_parus_integer, make_parus_decimal, +);
 	return 0;
 }
 
 static int subtract(void* stk, void* lex) {
 	GET_TWO_NUMBERS;
-	ARTH_FN(new_parusdata_integer, new_parusdata_decimal, -);
+	ARTH_FN(make_parus_integer, make_parus_decimal, -);
 	return 0;
 }
 
 static int multiply(void* stk, void* lex) {
 	GET_TWO_NUMBERS;
-	ARTH_FN(new_parusdata_integer, new_parusdata_decimal, *);
+	ARTH_FN(make_parus_integer, make_parus_decimal, *);
 	return 0;
 }
 
@@ -326,7 +326,7 @@ static int divide(void* stk, void* lex) {
 
 	decimal_t a = force_decimal(pd1);
 	decimal_t b = force_decimal(pd2);
-	stack_push(stk, new_parusdata_decimal(a / b));
+	stack_push(stk, make_parus_decimal(a / b));
 	
 	free_parusdata(pd1);
 	free_parusdata(pd2);
@@ -338,7 +338,7 @@ static int powerof(void* stk, void* lex) {
 
 	decimal_t a = force_decimal(pd1);
 	decimal_t b = force_decimal(pd2);
-	stack_push(stk, new_parusdata_decimal(pow(a, b)));
+	stack_push(stk, make_parus_decimal(pow(a, b)));
 	
 	free_parusdata(pd1);
 	free_parusdata(pd2);
@@ -347,19 +347,19 @@ static int powerof(void* stk, void* lex) {
 
 static int equal(void* stk, void* lex) {
 	GET_TWO_NUMBERS;
-	ARTH_FN(new_parusdata_integer, new_parusdata_integer, ==);
+	ARTH_FN(make_parus_integer, make_parus_integer, ==);
 	return 0;
 }
 
 static int less_than(void* stk, void* lex) {
 	GET_TWO_NUMBERS;
-	ARTH_FN(new_parusdata_integer, new_parusdata_integer, <);
+	ARTH_FN(make_parus_integer, make_parus_integer, <);
 	return 0;
 }
 
 static int greater_than(void* stk, void* lex) {
 	GET_TWO_NUMBERS;
-	ARTH_FN(new_parusdata_integer, new_parusdata_integer, >);
+	ARTH_FN(make_parus_integer, make_parus_integer, >);
 	return 0;
 }
 
@@ -370,7 +370,7 @@ static int round_value(void* stk, void* lex) {
 		free_parusdata(pd);
 		return 1;
 	}
-	stack_push(stk, new_parusdata_integer(force_decimal(pd)));
+	stack_push(stk, make_parus_integer(force_decimal(pd)));
 	free_parusdata(pd);
 	return 0;
 }
@@ -383,11 +383,11 @@ static int round_value(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk); 					\
 	if (pd != NULL && COND) {							\
 		stack_push(stk, pd); 							\
-		stack_push(stk, new_parusdata_integer(1)); 		\
+		stack_push(stk, make_parus_integer(1)); 		\
 	} 													\
 	else { 												\
 		stack_push(stk, pd); 							\
-		stack_push(stk, new_parusdata_integer(0)); 		\
+		stack_push(stk, make_parus_integer(0)); 		\
 	}
 
 static int is_top_integer(void* stk, void* lex) {
@@ -468,7 +468,7 @@ static int read(void* stk, void* lex) {
 }
 
 static int getcharacter(void* stk, void* lex) {
-	stack_push(stk, new_parusdata_integer(getc(stdin)));
+	stack_push(stk, make_parus_integer(getc(stdin)));
 
 	return 0;
 }
@@ -566,7 +566,7 @@ static int for_op(void* stk, void* lex) {
 	int i = parusdata_tointeger(min);
 
 	while (1) {
-		stack_push(stk, new_parusdata_integer(i));
+		stack_push(stk, make_parus_integer(i));
 		stack_push(stk, parusdata_copy(max));
 		parus_apply(parusdata_copy(cmp), stk, lex);
 
@@ -578,7 +578,7 @@ static int for_op(void* stk, void* lex) {
 
 
 		if (cond_int != 0) {
-			lexicon_define(lex, parusdata_getsymbol(sym), new_parusdata_integer(i));
+			lexicon_define(lex, parusdata_getsymbol(sym), make_parus_integer(i));
 
 			parus_apply(parusdata_copy(fn), stk, lex);
 
@@ -603,7 +603,7 @@ static int for_op(void* stk, void* lex) {
 
 static int end_case_op(void* stk, void* lex) {
 	Stack* pstk 		= (Stack*)stk;
-	ParusData* case_sym = new_parusdata_symbol("case");
+	ParusData* case_sym = make_parus_symbol("case");
 
 	int index = -1;
 
@@ -691,52 +691,52 @@ static int help(void* stk, void* lex) {
 }
 
 Lexicon* predefined_lexicon() {
-	Lexicon* lex = new_lexicon();
+	Lexicon* lex = make_lexicon();
 
-	lexicon_define(lex, "define", new_parusdata_baseop(&define));
-	lexicon_define(lex, "delete", new_parusdata_baseop(&delete));
-	lexicon_define(lex, "!", new_parusdata_baseop(&apply_top));
-	lexicon_define(lex, "quote", new_parusdata_baseop(&quote));
-	lexicon_define(lex, "if", new_parusdata_baseop(&if_op));
-	lexicon_define(lex, "eqv?", new_parusdata_baseop(&eqv));
-	lexicon_define(lex, "@", new_parusdata_baseop(&fetch));
-	lexicon_define(lex, "@.", new_parusdata_baseop(&fetch_copy));
-	lexicon_define(lex, "length", new_parusdata_baseop(&length));
-	lexicon_define(lex, "drop", new_parusdata_baseop(&drop));
-	lexicon_define(lex, "find", new_parusdata_baseop(&find));
+	lexicon_define(lex, "define", make_parus_baseop(&define));
+	lexicon_define(lex, "delete", make_parus_baseop(&delete));
+	lexicon_define(lex, "!", make_parus_baseop(&apply_top));
+	lexicon_define(lex, "quote", make_parus_baseop(&quote));
+	lexicon_define(lex, "if", make_parus_baseop(&if_op));
+	lexicon_define(lex, "eqv?", make_parus_baseop(&eqv));
+	lexicon_define(lex, "@", make_parus_baseop(&fetch));
+	lexicon_define(lex, "@.", make_parus_baseop(&fetch_copy));
+	lexicon_define(lex, "length", make_parus_baseop(&length));
+	lexicon_define(lex, "drop", make_parus_baseop(&drop));
+	lexicon_define(lex, "find", make_parus_baseop(&find));
 
-	lexicon_define(lex, "+", new_parusdata_baseop(&add));
-	lexicon_define(lex, "-", new_parusdata_baseop(&subtract));
-	lexicon_define(lex, "*", new_parusdata_baseop(&multiply));
-	lexicon_define(lex, "/", new_parusdata_baseop(&divide));
-	lexicon_define(lex, "^", new_parusdata_baseop(&powerof));
-	lexicon_define(lex, "=", new_parusdata_baseop(&equal));
-	lexicon_define(lex, "<", new_parusdata_baseop(&less_than));
-	lexicon_define(lex, ">", new_parusdata_baseop(&greater_than));
-	lexicon_define(lex, "round", new_parusdata_baseop(&round_value));
+	lexicon_define(lex, "+", make_parus_baseop(&add));
+	lexicon_define(lex, "-", make_parus_baseop(&subtract));
+	lexicon_define(lex, "*", make_parus_baseop(&multiply));
+	lexicon_define(lex, "/", make_parus_baseop(&divide));
+	lexicon_define(lex, "^", make_parus_baseop(&powerof));
+	lexicon_define(lex, "=", make_parus_baseop(&equal));
+	lexicon_define(lex, "<", make_parus_baseop(&less_than));
+	lexicon_define(lex, ">", make_parus_baseop(&greater_than));
+	lexicon_define(lex, "round", make_parus_baseop(&round_value));
 
-	lexicon_define(lex, "integer?", new_parusdata_baseop(&is_top_integer));
-	lexicon_define(lex, "decimal?", new_parusdata_baseop(&is_top_decimal));
-	lexicon_define(lex, "operator?", new_parusdata_baseop(&is_top_operator));
-	lexicon_define(lex, "symbol?", new_parusdata_baseop(&is_top_symbol));
-	lexicon_define(lex, "quoted?", new_parusdata_baseop(&is_top_quoted));
+	lexicon_define(lex, "integer?", make_parus_baseop(&is_top_integer));
+	lexicon_define(lex, "decimal?", make_parus_baseop(&is_top_decimal));
+	lexicon_define(lex, "operator?", make_parus_baseop(&is_top_operator));
+	lexicon_define(lex, "symbol?", make_parus_baseop(&is_top_symbol));
+	lexicon_define(lex, "quoted?", make_parus_baseop(&is_top_quoted));
 
-	lexicon_define(lex, "out", new_parusdata_baseop(&out));
-	lexicon_define(lex, "outln", new_parusdata_baseop(&outln));
-	lexicon_define(lex, "read", new_parusdata_baseop(&read));
-	lexicon_define(lex, "getc", new_parusdata_baseop(&getcharacter));
-	lexicon_define(lex, "putc", new_parusdata_baseop(&putcharacter));
+	lexicon_define(lex, "out", make_parus_baseop(&out));
+	lexicon_define(lex, "outln", make_parus_baseop(&outln));
+	lexicon_define(lex, "read", make_parus_baseop(&read));
+	lexicon_define(lex, "getc", make_parus_baseop(&getcharacter));
+	lexicon_define(lex, "putc", make_parus_baseop(&putcharacter));
 
-	lexicon_define(lex, "dpl", new_parusdata_baseop(&dpl));
-	lexicon_define(lex, "setat", new_parusdata_baseop(&setat));
-	lexicon_define(lex, "for", new_parusdata_baseop(&for_op));
-	lexicon_define(lex, "case", new_parusdata_quote(new_parusdata_symbol("case")));
-	lexicon_define(lex, "end-case", new_parusdata_baseop(&end_case_op));
-	lexicon_define(lex, "quit", new_parusdata_baseop(&quit));
+	lexicon_define(lex, "dpl", make_parus_baseop(&dpl));
+	lexicon_define(lex, "setat", make_parus_baseop(&setat));
+	lexicon_define(lex, "for", make_parus_baseop(&for_op));
+	lexicon_define(lex, "case", make_parus_quote(make_parus_symbol("case")));
+	lexicon_define(lex, "end-case", make_parus_baseop(&end_case_op));
+	lexicon_define(lex, "quit", make_parus_baseop(&quit));
 
-	lexicon_define(lex, "?stk", new_parusdata_baseop(&stkprint));
-	lexicon_define(lex, "?lex", new_parusdata_baseop(&lexprint));
-	lexicon_define(lex, "?help", new_parusdata_baseop(&help));
+	lexicon_define(lex, "?stk", make_parus_baseop(&stkprint));
+	lexicon_define(lex, "?lex", make_parus_baseop(&lexprint));
+	lexicon_define(lex, "?help", make_parus_baseop(&help));
 
 	return lex;
 

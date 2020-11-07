@@ -106,20 +106,20 @@ typedef ParusData* (*applier_t)(void*, void*);
 
 
 ParusData* 		parusdata_copy(ParusData* original);
-ParusData* 		new_parusdata_integer(integer_t i);
+ParusData* 		make_parus_integer(integer_t i);
 integer_t 		parusdata_tointeger(ParusData* pd);
-ParusData* 		new_parusdata_decimal(decimal_t d);
+ParusData* 		make_parus_decimal(decimal_t d);
 decimal_t 		parusdata_todecimal(ParusData* pd);
-ParusData* 		new_parusdata_symbol(char* s);
+ParusData* 		make_parus_symbol(char* s);
 char* 			parusdata_getsymbol(ParusData* pd);
-ParusData* 		new_parusdata_quote(ParusData* quoted);
+ParusData* 		make_parus_quote(ParusData* quoted);
 ParusData* 		parusdata_unquote(ParusData* pd);
-ParusData* 		new_parusdata_baseop(baseop_t op);
-ParusData* 		new_parusdata_userop(char* expr);
+ParusData* 		make_parus_baseop(baseop_t op);
+ParusData* 		make_parus_userop(char* expr);
 void 			free_parusdata(ParusData* pd);
 void 			print_parusdata(ParusData* pd);
 
-Stack* 		new_stack();
+Stack* 		make_stack();
 void 		stack_push(Stack* stk, ParusData* pd);
 ParusData* 	stack_pull(Stack* stk);
 ParusData* 	stack_get_at(Stack* stk, size_t index);
@@ -127,7 +127,7 @@ void 		stack_remove_at(Stack* stk, size_t index);
 void 		free_stack(Stack* stk);
 void 		print_stack(Stack* stk);
 
-Lexicon* 	new_lexicon();
+Lexicon* 	make_lexicon();
 void 		lexicon_define(Lexicon* lex, char* name, ParusData* pd);
 void 		lexicon_delete(Lexicon* lex, char* name);
 ParusData* 	lexicon_get(Lexicon* lex, char* name);
