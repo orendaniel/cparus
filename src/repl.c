@@ -80,7 +80,7 @@ char* repl_read() {
 	if (!input)
 		return NULL;
 
-	while (parus_validate_expression(input) > 0) {
+	while (parus_parencount(input) > 0) {
 		char* addition = readline("... ");
 
 		#ifdef USE_READLINE

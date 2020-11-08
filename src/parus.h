@@ -134,7 +134,7 @@ ParusData* 	lexicon_get(Lexicon* lex, char* name);
 void 		free_lexicon(Lexicon* lex);
 void 		print_lexicon(Lexicon* lex);
 
-int 	parus_validate_expression(char* str);
+int 	parus_parencount(char* str);
 void 	parus_set_applier(baseop_t caller, applier_t applier);
 int 	parus_apply(ParusData* pd, Stack* stk, Lexicon* lex);
 void 	parus_evaluate(char* input, Stack* stk, Lexicon* lex);

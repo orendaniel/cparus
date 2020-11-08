@@ -636,7 +636,7 @@ if result > 0 unterminated expression
 if result = 0 valid expression
 if result < 0 overterminated expression
 */
-int parus_validate_expression(char* str) {
+int parus_parencount(char* str) {
 	int 	result  = 0;
 	char 	ignore  = 0;
 	int 	i 		= 0;
@@ -778,43 +778,30 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 
 /* The Parus Evaluator */
 void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
-	int 	size 	= (strlen(input) +1);
+	char* 	buffer 	= copy_string(input);
+	size_t 	start 	= 0;
+	size_t 	end 	= 0;
 	int 	i 		= 0;
-	int 	j 		= 0;
 	char 	c;
 
-	char* buffer = malloc(size * sizeof(char));
-	clear_buffer(buffer, size);
-
 	while ((c = input[i++]) != '\0') {
+		if (isspace(c)) {
+			char old = buffer[end];
+			buffer[end] = '\0';
+			if (parus_parencount(buffer + start) <= 0) {
+				int e = eval(buffer + start, stk, lex);
 
-		if (c == COMMENT_CHAR) { // comment skip to next line
-			buffer[j] = ' ';
-			while ((c = input[++i]) != '\n' && c != '\0');
+				if (e)
+					break;
+				start = end;
+
+			}
+			buffer[end] = old;
 		}
+		end++;
 
-		else if (isspace(c) && parus_validate_expression(buffer) <= 0) { // if balanced expression
-			buffer[j] = '\0';
-
-			int e = eval(buffer, stk, lex);
-
-			clear_buffer(buffer, size);
-			j = 0;
-			if (e != 0)
-				break;
-		}
-		else  {
-			if (isspace(c))
-				buffer[j] = ' ';
-			else
-				buffer[j] = c;
-			j++;
-		}
 	}
-
-	buffer[j] = '\0';
-	eval(buffer, stk, lex);
+	eval(buffer + start, stk, lex);
 
 	free(buffer);
-
 }
