@@ -50,8 +50,6 @@ char* readline(const char* prompt) {
 
 #endif
 
-
-
 char* read_file(FILE* f) {
 	int 	size 	= 0;
 	int 	max 	= TEXT_BUFFER;

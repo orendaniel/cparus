@@ -18,6 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "parus.h"
 
+#define BUFFER_GROWTH 1024
+
 // store the address of the base operator which called parus_apply
 static baseop_t apply_caller;
 
@@ -26,7 +28,6 @@ static applier_t apply_shortcut;
 
 // HELPERS
 // ----------------------------------------------------------------------------------------------------
-
 static char* copy_string(char* s) {
 	int 	size 	= strlen(s);
 	char* 	ns		= calloc(size +1, sizeof(char));
@@ -90,12 +91,6 @@ static int quote_count(char* s) {
 	return i;
 }
 
-static void clear_buffer(char* buffer, int size) {
-	for (int i = 0; i < size || buffer[i] == '\0'; i++) 
-        buffer[i] = '\0';
-}
-
-
 /* inserts an instruction to a op */
 static void insert_instruction(ParusData* op, ParusData* instr) {
 	if (op->type != USEROP) {
@@ -114,6 +109,8 @@ static void insert_instruction(ParusData* op, ParusData* instr) {
 			op->data.userop.max += USEROP_INSTR_GROWTH;
 			op->data.userop.instructions[op->data.userop.size++] = instr;
 		}
+		else
+			fprintf(stderr, "CANNOT INSERT INSTRUCTION\n");
 	}
 }
 
@@ -134,8 +131,11 @@ static ParusData* init_userop() {
 make a new parusdata as a user defined operator 
 A user defined operator is represented by an array of ParusData that are evaluated sequentially
 
-expr is the textual representation of the operator with the openning emitted sense it is unneeded 
+expr is the textual representation of the operator with the openning emitted sense it is unneeded
+spaces between parentheses are required
+
 Example: DPL * )
+
 expr must be mutable
 */
 static ParusData* make_userop(char* expr) {
@@ -218,13 +218,18 @@ static ParusData* make_userop(char* expr) {
 Evaluates a single expression at a time, not including comments
 
 pass only mutable strings to eval as this function mutates the string
+spaces between parentheses are required
 
 returns 0 only if parsed correctly
 NOT IF EXPRESSION RAN CORRECTLY
 */
 static int eval(char* expr, Stack* stk, Lexicon* lex) {
+	/* skip spaces */
+	while (isspace(expr[0]))
+		expr++;
+
 	/* pass */
-	if (isspace(expr[0]) || expr[0] == '\0')
+	if (expr[0] == '\0')
 		return 0;
 
 	/* invalid syntax */
@@ -249,15 +254,8 @@ static int eval(char* expr, Stack* stk, Lexicon* lex) {
 		stack_push(stk, make_parus_decimal(atof(expr)));
 
 	/* quoted forms */
-	else if (is_quoted(expr)) {
-		if (is_symbol(expr + quote_count(expr)))
-			stack_push(stk, quotate_symbol(expr));
-
-		else {
-			fprintf(stderr, "INVALID QUOTATION FORM - %s\n", expr);
-			return 1;
-		}
-	}
+	else if (is_quoted(expr) && is_symbol(expr + quote_count(expr)))
+		stack_push(stk, quotate_symbol(expr));
 
 	/* apply for given symbol */
 	else if (is_symbol(expr)) {
@@ -266,12 +264,17 @@ static int eval(char* expr, Stack* stk, Lexicon* lex) {
 	}
 
 	else {
-		fprintf(stderr, "SYNTAX ERROR - %s\n", expr);
+		fprintf(stderr, "INVALID EXPRESSION - %s\n", expr);
 		return 1;
 
 	} 
 
 	return 0;
+}
+
+static void clear_buffer(char* buffer, int size) {
+	for (int i = 0; i < size || buffer[i] == '\0'; i++) 
+        buffer[i] = '\0';
 }
 
 // PARUSDATA
@@ -379,13 +382,18 @@ ParusData* make_parus_baseop(baseop_t op) {
 	return pd;
 }
 
-/* returns a new user defined operator */
+/*
+returns a new user defined operator
+
+comments are not allowed, and only ' ' is a valid space
+*/
 ParusData* make_parus_userop(char* expr) {
 	char* 		nexpr 	= copy_string(expr);
-	ParusData* 	op 		= make_userop(nexpr + 2);
+	ParusData* 	op 		= make_userop(nexpr + 1);
 	free(nexpr);
 	return op;
 }
+
 
 /* free the parusdata */
 void free_parusdata(ParusData* pd) {
@@ -436,11 +444,10 @@ makes a new parus stack
 EVERY ITEM SHOULD BE UNIQUE
 */
 Stack* make_stack() {
-	Stack* stk = calloc(1, sizeof(Stack*));
-
-	stk->max    = STACK_GROWTH;
+	Stack* stk 	= calloc(1, sizeof(Stack*));
 	stk->size   = 0;
-	stk->items  = calloc(STACK_GROWTH, sizeof(ParusData));
+	stk->max    = STACK_GROWTH;
+	stk->items  = calloc(stk->max, sizeof(ParusData));
 
 	return stk;
 }
@@ -524,11 +531,10 @@ void print_stack(Stack* stk) {
 
 /* makes a new lexicon */
 Lexicon* make_lexicon() {
-	Lexicon* lex = calloc(1, sizeof(Lexicon));
-
-	lex->size = 0;
-	lex->entries 	= calloc(LEXICON_GROWTH, sizeof(struct entry));
+	Lexicon* lex 	= calloc(1, sizeof(Lexicon));
+	lex->size 		= 0;
 	lex->max 		= LEXICON_GROWTH;
+	lex->entries 	= calloc(lex->max, sizeof(struct entry));
 
 	return lex;
 }
@@ -656,7 +662,6 @@ goto is used to optimize the last call in the operator
 int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 	static int call_depth = 0; // stores the call history
 
-
 	if (call_depth > MAXIMUM_CALL_DEPTH) {
 		fprintf(stderr, "INSUFFICIENT DATA FOR MEANINGFUL ANSWER\n");
 		return 1;
@@ -752,24 +757,22 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 
 }
 
-
 /* The Parus Evaluator */
 void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
+	int 	size 	= (strlen(input) +1);
+	int 	i 		= 0;
+	int 	j 		= 0;
+	char 	c;
 
-	int size = (strlen(input) +1);
 	char* buffer = malloc(size * sizeof(char));
 	clear_buffer(buffer, size);
-
-	int i = 0;
-	int j = 0;
-	int c;
 
 	while ((c = input[i++]) != '\0') {
 
 		if (c == COMMENT_CHAR) { // comment skip to next line
 			buffer[j] = ' ';
 			while ((c = input[++i]) != '\n' && c != '\0');
-		} 
+		}
 
 		else if (isspace(c) && parus_validate_expression(buffer) <= 0) { // if balanced expression
 			buffer[j] = '\0';
@@ -782,7 +785,7 @@ void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
 				break;
 		}
 		else  {
-			if (isspace(c)) 
+			if (isspace(c))
 				buffer[j] = ' ';
 			else
 				buffer[j] = c;
@@ -792,7 +795,6 @@ void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
 
 	buffer[j] = '\0';
 	eval(buffer, stk, lex);
-	
+
 	free(buffer);
 }
-
