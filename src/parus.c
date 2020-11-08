@@ -18,8 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "parus.h"
 
-#define BUFFER_GROWTH 1024
-
 // store the address of the base operator which called parus_apply
 static baseop_t apply_caller;
 
