@@ -26,14 +26,30 @@ static applier_t apply_shortcut;
 
 // HELPERS
 // ----------------------------------------------------------------------------------------------------
+/* copies the string, and insertes spaces between parentheses */
 static char* copy_string(char* s) {
-	int 	size 	= strlen(s);
-	char* 	ns		= calloc(size +1, sizeof(char));
+	int size 	= 1;
+	int len 	= 1;
 
-	for (int i = 0; i < size; i++)
-		ns[i] = s[i];
+	for (int i = 0; s[i] != '\0'; i++) {
+		if (s[i] == LP_CHAR || s[i] == RP_CHAR)
+			size += 2; // insert area for two spaces
 
-	ns[size] = '\0';
+		size++;
+		len++;
+	}
+
+	char* ns = calloc(size, sizeof(char));
+
+	for (int i = 0, j = 0; i < len; i++, j++) {
+		if (s[i] == LP_CHAR || s[i] == RP_CHAR) {
+			ns[j++] = ' ';
+			ns[j++] = s[i];
+			ns[j] = ' ';
+		}
+		else
+			ns[j] = s[i];
+	}
 
 	return ns;
 }
@@ -386,8 +402,13 @@ returns a new user defined operator
 comments are not allowed, and only ' ' is a valid space
 */
 ParusData* make_parus_userop(char* expr) {
-	char* 		nexpr 	= copy_string(expr);
-	ParusData* 	op 		= make_userop(nexpr + 1);
+	int 	offset 	= 0;
+	char* 	nexpr 	= copy_string(expr);
+
+	while (isspace(nexpr[offset]))
+		offset++;
+
+	ParusData* op = make_userop(nexpr + offset +1);
 	free(nexpr);
 	return op;
 }
@@ -795,4 +816,5 @@ void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
 	eval(buffer, stk, lex);
 
 	free(buffer);
+
 }
