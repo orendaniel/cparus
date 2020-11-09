@@ -48,7 +48,7 @@ static char* copy_string(char* s) {
 			ns[j] = ' ';
 		}
 		else
-			ns[j] = s[i];
+			ns[j] = ? isspace(s[i]) ' ' : s[i];
 	}
 
 	return ns;
@@ -656,6 +656,7 @@ int parus_parencount(char* str) {
 
 	return result;
 }
+
 /*
 sets apply_caller and apply_shortcut.
 make sure to call parus_set_applier(NULL, NULL), 
@@ -789,10 +790,8 @@ void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
 			while ((c = input[++i]) != '\n' && c != '\0');
 		}
 
-		else if (isspace(c))
-			buffer[j++] = ' ';
 		else
-			buffer[j++] = c;
+			buffer[j++] = ? isspace(c) ' ' : c;
 		
 		int pc = parus_parencount(buffer);
 
