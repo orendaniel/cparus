@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define TEXT_BUFFER 1024
+#define TEXT_BUFFER_SIZE 1024
 
 #include "parus.h"
 #include "parus_predefined.h"
@@ -30,16 +30,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #ifndef USE_READLINE
 
-/* a replacement for gnu readlie */
+/* a replacement for gnu readline */
 char* readline(const char* prompt) { 
-	char* line = malloc(TEXT_BUFFER * sizeof(char));
+	char* line = malloc(TEXT_BUFFER_SIZE * sizeof(char));
 
 	if (line == NULL)
 		return NULL;
 
 	printf("%s", prompt);
 
-	if (fgets(line, TEXT_BUFFER, stdin) != NULL)
+	if (fgets(line, TEXT_BUFFER_SIZE, stdin) != NULL)
 		return line;
 	else {
 		free(line);
@@ -52,7 +52,7 @@ char* readline(const char* prompt) {
 
 char* read_file(FILE* f) {
 	int 	size 	= 0;
-	int 	max 	= TEXT_BUFFER;
+	int 	max 	= TEXT_BUFFER_SIZE;
 	char* 	text 	= calloc(max, sizeof(char));
 
 	int c = 0;
@@ -60,9 +60,9 @@ char* read_file(FILE* f) {
 		if (size != max - 1) 
 			text[size++] = c;
 		else {
-			text = realloc(text, (max + TEXT_BUFFER) * sizeof(char));
+			text = realloc(text, (max + TEXT_BUFFER_SIZE) * sizeof(char));
 			if (text != 0) {
-				max += TEXT_BUFFER;
+				max += TEXT_BUFFER_SIZE;
 				text[size++] = c;
 			}
 		}

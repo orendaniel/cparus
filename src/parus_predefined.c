@@ -19,23 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "parus_predefined.h"
 #include <math.h>
 
-#define READ_BUFFER 128
-
-static char is_integer(char* s) {
-	if (s == NULL || *s == '\0' || isspace(*s))
-		return 0;
-	char* p;
-	strtol(s, &p, 10);
-	return *p == '\0';
-}
-
-static char is_decimal(char* s) {
-	if (s == NULL || *s == '\0' || isspace(*s)) 
-		return 0;
-	char * p;
-	strtod(s, &p);
-	return *p == '\0';
-}
+#define READER_BUFFER_SIZE 1024
 
 static decimal_t force_decimal(ParusData* pd) {
 	if (pd->type == INTEGER)
@@ -440,29 +424,11 @@ static int outln(void* stk, void* lex) {
 	return ret;
 }
 
+/* reader evaluates the expression given */
 static int read(void* stk, void* lex) {
-
-	int c;
-	int i = 1;
-
-	char buffer[READ_BUFFER];
-	buffer[0] = QUOTE_CHAR;
-
-	while ((c = getc(stdin)) != EOF && c != COMMENT_CHAR && i < READ_BUFFER -1) {
-		if (isspace(c)) {
-			buffer[i] = '\0';
-			break;
-		}
-		else if (c != LP_CHAR && c != RP_CHAR && c != QUOTED) {
-			buffer[i] = (char)c;
-			i++;
-		}
-	}
-	if (is_integer(buffer +1) || is_decimal(buffer +1))
-		parus_evaluate(buffer +1, stk, lex);
-	else
-		parus_evaluate(buffer, stk, lex);
-
+	char line[READER_BUFFER_SIZE];
+	if (fgets(line, READER_BUFFER_SIZE, stdin) != NULL)
+		parus_evaluate(line, stk, lex);
 
 	return 0;
 }

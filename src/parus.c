@@ -55,31 +55,41 @@ static char* copy_string(char* s) {
 }
 
 static char is_user_operator(char* s) {
-	return s[0] == LP_CHAR && (s[1] == '\0' || isspace(s[1]));
+	return s != NULL && s[0] == LP_CHAR;
 }
 
 static char is_termination(char* s) {
-	return s[0] == RP_CHAR && (s[1] == '\0' || isspace(s[1]));
+	return s != NULL && s[0] == RP_CHAR;
 }
 
 static char is_integer(char* s) {
-	if (s == NULL || *s == '\0' || isspace(*s))
+	if (s == NULL || s[0] == '\0' || isspace(s[0]))
 		return 0;
 	char* p;
 	strtol(s, &p, 10);
-	return *p == '\0';
+	return p[0] == '\0';
 }
 
 static char is_decimal(char* s) {
-	if (s == NULL || *s == '\0' || isspace(*s)) 
+	if (s == NULL || s[0] == '\0' || isspace(s[0])) 
 		return 0;
-	char * p;
+	char* p;
 	strtod(s, &p);
-	return *p == '\0';
+	return p[0] == '\0';
 }
 
 static char is_quoted(char* s) {
-	return s[0] == QUOTE_CHAR;
+	return s != NULL && s[0] == QUOTE_CHAR;
+}
+
+static char is_symbol(char* s) {
+	return s != NULL
+		&& !is_termination(s)
+		&& !is_user_operator(s)
+		&& !is_integer(s) 
+		&& !is_decimal(s) 
+		&& !is_quoted(s)
+		&& s[0] != '\0';
 }
 
 static ParusData* quotate_symbol(char* expr) {
@@ -87,15 +97,6 @@ static ParusData* quotate_symbol(char* expr) {
 		return make_parus_symbol(expr +1);
 	else
 		return make_parus_quote(quotate_symbol(expr +1));
-}
-
-static char is_symbol(char* s) {
-	return !is_termination(s)
-		&& !is_user_operator(s)
-		&& !is_integer(s) 
-		&& !is_decimal(s) 
-		&& !is_quoted(s)
-		&& s[0] != '\0';
 }
 
 static int quote_count(char* s) {
@@ -284,11 +285,6 @@ static int eval(char* expr, Stack* stk, Lexicon* lex) {
 	} 
 
 	return 0;
-}
-
-static void clear_buffer(char* buffer, int size) {
-	for (int i = 0; i < size || buffer[i] == '\0'; i++) 
-        buffer[i] = '\0';
 }
 
 // PARUSDATA
@@ -686,7 +682,7 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		return 1;
 	}
 
-	// back door for base operator that use apply themselves
+	// back door for base operators that use apply themselves
 	if (pd == NULL && apply_shortcut != NULL && apply_caller != NULL)
 		pd = apply_shortcut(stk, lex);
 
@@ -718,6 +714,7 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 			int result = (*pd->data.baseop)(stk, lex);
 			if (result)
 				fprintf(stderr, "ERROR\n");
+
 			free_parusdata(pd);
 		}
 		else {
@@ -740,7 +737,7 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		// do all the instruction in the operator except the last instruction
 		for (int i = 0; i < pd->data.userop.size -1; i++) {
 			
-			// if not self evaluating instruction than apply it
+			// if not self evaluating instruction then apply it
 			ParusData* instr = pd->data.userop.instructions[i];
 			if (instr->type == SYMBOL || instr->type == QUOTED) {
 
@@ -778,30 +775,48 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 
 /* The Parus Evaluator */
 void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
-	char* 	buffer 	= copy_string(input);
-	size_t 	start 	= 0;
-	size_t 	end 	= 0;
+	int 	size 	= (strlen(input) +1);
 	int 	i 		= 0;
+	int 	j 		= 0;
 	char 	c;
 
+	char* buffer = calloc(size, sizeof(char));
+
 	while ((c = input[i++]) != '\0') {
-		if (isspace(c)) {
-			char old = buffer[end];
-			buffer[end] = '\0';
-			if (parus_parencount(buffer + start) <= 0) {
-				int e = eval(buffer + start, stk, lex);
 
-				if (e)
-					break;
-				start = end;
-
-			}
-			buffer[end] = old;
+		if (c == COMMENT_CHAR) { // comment skip to next line
+			buffer[j] = ' ';
+			while ((c = input[++i]) != '\n' && c != '\0');
 		}
-		end++;
 
+		else if (isspace(c))
+			buffer[j++] = ' ';
+		else
+			buffer[j++] = c;
+		
+		int pc = parus_parencount(buffer);
+
+		if ((c == LP_CHAR && pc == 1) ||
+			((isspace(c) || c == RP_CHAR) && pc <= 0)) {
+
+			if (isspace(c) || c == LP_CHAR)
+				buffer[j -1] = '\0'; // terminate expression
+
+			int e = eval(buffer, stk, lex);
+			if (e != 0)
+				break;
+
+			memset(buffer, '\0', size);
+			j = 0;
+
+			if (c == LP_CHAR) // and return the removed LP to the buffer
+				buffer[j++] = LP_CHAR;
+
+		}
 	}
-	eval(buffer + start, stk, lex);
+
+	eval(buffer, stk, lex);
 
 	free(buffer);
+
 }
