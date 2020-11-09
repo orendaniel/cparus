@@ -6,7 +6,7 @@
 1 'else define 		; else will always evaluate to true
 
 
-( find 'strip_i 0 2 @ '< 1 'drop for ) 'strip define ; a helper function that cleans the stack until a label
+(find 'strip_i 0 2 @ '< 1 'drop for) 'strip define ; a helper function that cleans the stack until a label
 
 ( 
 	case find 1 - @ ! ; get the conditional macro
@@ -21,8 +21,8 @@
 
 	( 
 		case find 1 = 							; check if no more case
-		( case strip ) 							; if yes then clean up
-		( case find 1 - @ drop end-case )   	; else continue to execute
+		(case strip) 							; if yes then clean up
+		(case find 1 - @ drop end-case)   	; else continue to execute
 		if ! 
 	) ; else continue
 
@@ -33,9 +33,9 @@
 
 ; mark the start of the structure
 case
-	( x 3 < )   ( 'A outln )
-	( x 3 = )   ( case ( 5 3 < ) ( 'C outln ) ( else ) ( 'D outln ) end-case )
-	( else )    ( 'B outln )
+	(x 3 <)   ('A outln)
+	(x 3 =)   (case (5 3 <) ('C outln) (else) ('D outln) end-case)
+	(else)    ('B outln)
 end-case
 ; end-case is the actual macro which evaluate the structure
 

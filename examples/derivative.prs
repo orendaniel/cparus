@@ -4,6 +4,6 @@
 	'drv_f delete
 ) 'drv define
 
-( dpl * ) 'parabola define
+(2 ^) 'parabola define
 
 5 'parabola drv outln

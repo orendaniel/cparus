@@ -3,7 +3,7 @@
 (
 	dpl 2 + @ drop ; remove original
 	'setat_ind define
-	'setat_i 0 setat_ind '< 1 ( setat_ind @ ) for 
+	'setat_i 0 setat_ind '< 1 (setat_ind @) for 
 	'setat_ind delete 
 ) 'setat define
 

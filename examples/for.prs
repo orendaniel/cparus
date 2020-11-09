@@ -27,9 +27,9 @@
 	( 
 		for_sym ! for_b for_cmp
 		; call the function, then redefine the iterator as iterator + FOR_i, then iterate again 
-		( for_fn for_sym ! for_i + for_sym redef for_helper  )
+		(for_fn for_sym ! for_i + for_sym redef for_helper)
 		; delete the iterator
-		( for_sym delete ) if !
+		(for_sym delete) if !
 	) 'for_helper define
 	
 	for_helper
@@ -45,6 +45,6 @@
 
 ) 'for define
 
-( 1 @. 1 @. < 2 @ 2 @ = + ) '<= define
+(> 0 1 if) '<= define
 
-'a 1 10 '<= 1 ( a outln ) for 
+'a 1 10 '<= 1 (a outln) for 
