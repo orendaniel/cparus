@@ -48,7 +48,7 @@ static char* copy_string(char* s) {
 			ns[j] = ' ';
 		}
 		else
-			ns[j] = ? isspace(s[i]) ' ' : s[i];
+			ns[j] = isspace(s[i]) ? ' ' : s[i];
 	}
 
 	return ns;
@@ -101,8 +101,7 @@ static ParusData* quotate_symbol(char* expr) {
 
 static int quote_count(char* s) {
 	int i = 0;
-	while (s[i] == QUOTE_CHAR && s[i] != '\0')
-		i++;
+	while (s[i] == QUOTE_CHAR && s[i] != '\0') i++;
 	return i;
 }
 
@@ -189,9 +188,7 @@ static ParusData* make_userop(char* expr) {
 				terminated = 1;
 				break;
 			}
-
 		}
-
 
 		else if (is_integer(token))
 			insert_instruction(op, make_parus_integer(atoi(token)));
@@ -220,11 +217,8 @@ static ParusData* make_userop(char* expr) {
 		return NULL;
 	}
 
-
 	ParusData* pd = stack_pull(opstk);
-
 	free_stack(opstk);
-
 	return pd;
 }
 
@@ -240,8 +234,7 @@ NOT IF EXPRESSION RAN CORRECTLY
 */
 static int eval(char* expr, Stack* stk, Lexicon* lex) {
 	/* skip spaces */
-	while (isspace(expr[0]))
-		expr++;
+	while (isspace(expr[0])) expr++;
 
 	/* pass */
 	if (expr[0] == '\0')
@@ -281,7 +274,6 @@ static int eval(char* expr, Stack* stk, Lexicon* lex) {
 	else {
 		fprintf(stderr, "INVALID EXPRESSION - %s\n", expr);
 		return 1;
-
 	} 
 
 	return 0;
@@ -394,21 +386,18 @@ ParusData* make_parus_baseop(baseop_t op) {
 
 /*
 returns a new user defined operator
-
 comments are not allowed, and only ' ' is a valid space
 */
 ParusData* make_parus_userop(char* expr) {
 	int 	offset 	= 0;
 	char* 	nexpr 	= copy_string(expr);
 
-	while (isspace(nexpr[offset]))
-		offset++;
+	while (isspace(nexpr[offset])) offset++;
 
 	ParusData* op = make_userop(nexpr + offset +1);
 	free(nexpr);
 	return op;
 }
-
 
 /* free the parusdata */
 void free_parusdata(ParusData* pd) {
@@ -634,24 +623,22 @@ if result < 0 overterminated expression
 */
 int parus_parencount(char* str) {
 	int 	result  = 0;
-	char 	ignore  = 0;
 	int 	i 		= 0;
+	char 	ignore  = 0;
+	char 	c;
 
-	while (str[i] != '\0') {
-		if (str[i] == COMMENT_CHAR)
+	while ((c = str[i++]) != '\0') {
+		if (c == COMMENT_CHAR)
 			ignore = 1;
 
-		else if (str[i] == '\n')
+		else if (c == '\n')
 			ignore = 0;
 
-		if (!ignore && str[i] == LP_CHAR)
+		if (!ignore && c == LP_CHAR)
 			result++;
 
-		else if (!ignore && str[i] == RP_CHAR)
+		else if (!ignore && c == RP_CHAR)
 			result--;
-
-		i++;
-
 	}   
 
 	return result;
@@ -673,7 +660,6 @@ applies a parusdata
 the function will automatically free pd if needed
 
 goto is used to optimize the last call in the operator 
-
 */
 int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 	static int call_depth = 0; // stores the call history
@@ -761,8 +747,8 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 		ParusData* 	next_pd	= parusdata_copy(last);
 
 		free_parusdata(pd);
-
 		pd = next_pd;
+
 		if (pd != NULL && (pd->type == SYMBOL || pd->type == QUOTED))
 			goto recall;
 		else
@@ -771,7 +757,6 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 	}
 
 	return 0;
-
 }
 
 /* The Parus Evaluator */
@@ -779,43 +764,37 @@ void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
 	int 	size 	= (strlen(input) +1);
 	int 	i 		= 0;
 	int 	j 		= 0;
+	char* 	buffer 	= calloc(size, sizeof(char));
 	char 	c;
 
-	char* buffer = calloc(size, sizeof(char));
-
 	while ((c = input[i++]) != '\0') {
-
 		if (c == COMMENT_CHAR) { // comment skip to next line
-			buffer[j] = ' ';
+			buffer[j++] = ' ';
 			while ((c = input[++i]) != '\n' && c != '\0');
 		}
-
 		else
-			buffer[j++] = ? isspace(c) ' ' : c;
+			buffer[j++] = isspace(c) ? ' ' : c;
 		
+		// if read a complete expression
 		int pc = parus_parencount(buffer);
-
 		if ((c == LP_CHAR && pc == 1) ||
 			((isspace(c) || c == RP_CHAR) && pc <= 0)) {
 
-			if (isspace(c) || c == LP_CHAR)
-				buffer[j -1] = '\0'; // terminate expression
+			buffer[c == RP_CHAR ? j :j -1] = '\0';
 
 			int e = eval(buffer, stk, lex);
 			if (e != 0)
 				break;
 
-			memset(buffer, '\0', size);
 			j = 0;
 
-			if (c == LP_CHAR) // and return the removed LP to the buffer
+			if (c == LP_CHAR) // return the removed LP to the buffer if needed
 				buffer[j++] = LP_CHAR;
-
 		}
 	}
 
+	buffer[j] = '\0';
 	eval(buffer, stk, lex);
-
 	free(buffer);
 
 }

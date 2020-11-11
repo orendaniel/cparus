@@ -30,9 +30,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define QUOTE_CHAR 		'\''
 #define COMMENT_CHAR 	';'
 
-#define STACK_GROWTH 	50
-#define LEXICON_GROWTH 	50
-
+#define STACK_GROWTH 		50
+#define LEXICON_GROWTH 		50
 #define USEROP_INSTR_GROWTH 10
 
 #define MAXIMUM_CALL_DEPTH 50000
