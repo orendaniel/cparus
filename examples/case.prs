@@ -1,6 +1,6 @@
 
 ; An example of a syntatic form that might be defined in Parus
-; implementation of a CASE-like branching structure
+; implementation of a case-like branching structure
 
 ''case 'case define ; defines a mark word
 1 'else define 		; else will always evaluate to true

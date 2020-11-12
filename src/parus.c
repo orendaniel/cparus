@@ -236,6 +236,7 @@ static int eval(char* expr, Stack* stk, Lexicon* lex) {
 	/* skip spaces */
 	while (isspace(expr[0])) expr++;
 
+
 	/* pass */
 	if (expr[0] == '\0')
 		return 0;
@@ -780,6 +781,7 @@ void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
 		if ((c == LP_CHAR && pc == 1) ||
 			((isspace(c) || c == RP_CHAR) && pc <= 0)) {
 
+
 			buffer[c == RP_CHAR ? j :j -1] = '\0';
 
 			int e = eval(buffer, stk, lex);
@@ -787,6 +789,7 @@ void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
 				break;
 
 			j = 0;
+			memset(buffer, '\0', size);
 
 			if (c == LP_CHAR) // return the removed LP to the buffer if needed
 				buffer[j++] = LP_CHAR;

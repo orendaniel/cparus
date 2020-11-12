@@ -101,7 +101,7 @@ static int apply_top(void* stk, void* lex) {
 
 }
 
-static int quote(void* stk, void* lex) {
+static int quotate(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
 
 	if (pd == NULL || !(pd->type == SYMBOL || pd->type == QUOTED)) {
@@ -662,7 +662,7 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "define", make_parus_baseop(&define));
 	lexicon_define(lex, "delete", make_parus_baseop(&delete));
 	lexicon_define(lex, "!", make_parus_baseop(&apply_top));
-	lexicon_define(lex, "quote", make_parus_baseop(&quote));
+	lexicon_define(lex, "quotate", make_parus_baseop(&quotate));
 	lexicon_define(lex, "if", make_parus_baseop(&if_op));
 	lexicon_define(lex, "eqv?", make_parus_baseop(&eqv));
 	lexicon_define(lex, "@", make_parus_baseop(&fetch));

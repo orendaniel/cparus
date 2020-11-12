@@ -67,6 +67,7 @@ char* read_file(FILE* f) {
 			}
 		}
 	}
+
 	return text;
 }
 

@@ -1,6 +1,6 @@
 
 ; An example of a syntatic form that might be defined in Parus
-; this implements a FOR-like looping structure
+; this implements a for-like looping structure
 ; this examples though recursive runs in constant space using the recall optimization
 
 ; redefines a symbol
@@ -16,17 +16,17 @@
 	'for_b 		define ; bind the end value
 	'for_a 		define ; bind the start value
 
-	quote 'for_sym define ; bind the symbol that represent the iterator
+	quotate 'for_sym define ; bind the symbol that represent the iterator
 
 	; For example 
-	; if the iterator symbol is i the FOR_sym means i 
-	; and FOR_sym ! means the value of i
+	; if the iterator symbol is i the for_sym means i 
+	; and for_sym ! means the value of i
 
 	for_a for_sym define ; bind start value to iterator
 	
 	( 
 		for_sym ! for_b for_cmp
-		; call the function, then redefine the iterator as iterator + FOR_i, then iterate again 
+		; call the function, then redefine the iterator as iterator + for_i, then iterate again 
 		(for_fn for_sym ! for_i + for_sym redef for_helper)
 		; delete the iterator
 		(for_sym delete) if !
@@ -34,7 +34,7 @@
 	
 	for_helper
 	
-	; delete everything the FOR used
+	; delete everything the for used
 	'for_helper delete
 	'for_fn 	delete
 	'for_i 		delete
