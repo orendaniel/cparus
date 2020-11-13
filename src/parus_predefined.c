@@ -427,7 +427,8 @@ static int outln(void* stk, void* lex) {
 /* reader evaluates the expression given */
 static int read(void* stk, void* lex) {
 	char line[READER_BUFFER_SIZE];
-	if (fgets(line, READER_BUFFER_SIZE, stdin) != NULL)
+	line[0] = QUOTE_CHAR;
+	if (fgets(line +1, READER_BUFFER_SIZE -1, stdin) != NULL)
 		parus_evaluate(line, stk, lex);
 
 	return 0;
