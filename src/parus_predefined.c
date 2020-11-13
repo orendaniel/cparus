@@ -103,18 +103,14 @@ static int apply_top(void* stk, void* lex) {
 
 static int quotate(void* stk, void* lex) {
 	ParusData* pd = stack_pull(stk);
-
-	if (pd == NULL || !(pd->type == SYMBOL || pd->type == QUOTED)) {
-		free_parusdata(pd);
-		fprintf(stderr, "CAN NOT PREFORM QUOTE OPERATION\n");
+	if (pd != NULL) {
+		stack_push(stk, make_parus_quote(pd));
+		return 0;
+	}
+	else {
+		fprintf(stderr, "NOTHING TO QUOTATE\n");
 		return 1;
 	}
-
-	else 
-		stack_push(stk, make_parus_quote(pd));
-
-
-	return 0;
 }
 
 static int if_op(void* stk, void* lex) {
