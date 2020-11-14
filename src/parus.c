@@ -662,10 +662,12 @@ void parus_evaluate(char* expr, Stack* stk, Lexicon* lex) {
 			// if nothing to quote
 			if (qtstk->size > 0 && qtstk->items[qtstk->size -1] != NULL && pd == NULL) { 
 				fprintf(stderr, "INVALID EXPRESSION GIVEN - STANDALONE QUOTE\n");
+				free_parusdata(pd);
 				break;
 			}
 			if (opstk->size > 0) { // if unterminated expression given
 				fprintf(stderr, "INVALID EXPRESSION GIVEN - UNTERMINATED OPERATOR\n");
+				free_parusdata(pd);
 				break;
 			}
 		}
