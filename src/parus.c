@@ -612,32 +612,24 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 /* The Parus Evaluator */
 void parus_evaluate(char* expr, Stack* stk, Lexicon* lex) {
 	char* 	buffer 	= copy_string(expr);
+	char* 	token 	= strtok(buffer, " ");
 
 	// stacks are used to store yet to be terminated operators and quotes
 	Stack* 	opstk 	= make_stack(); 
 	Stack* 	qtstk 	= make_stack();
-
-	char* 	token 	= strtok(buffer, " ");
 	
 	while (token != NULL) {
 		ParusData* pd = NULL;
 		
 		if (is_termination(token)) {
-			if (opstk->size == 1) {
-				pd = stack_pull(opstk);
-				if (qtstk->size != 0 && stack_pull(qtstk) != NULL) {
+			if (opstk->size > 0) {
+				if (qtstk->size != 0 && (pd = stack_pull(qtstk)) != NULL) {
+					free_parusdata(pd);
 					fprintf(stderr, "INVALID INSRUCTION GIVEN - STANDALONE QUOTE\n");
 					break;
 				}
-			}
 
-			else if (opstk->size > 1) {
-				ParusData* internal = stack_pull(opstk);
-				ParusData* external = stack_pull(opstk);
-
-				parus_insert_instr(external, internal);
-				stack_push(opstk, external);
-
+				pd = stack_pull(opstk);
 			}
 			else {
 				fprintf(stderr, "INVALID EXPRESSION GIVEN - EXPECTED AN OPERATOR\n");
@@ -667,9 +659,8 @@ void parus_evaluate(char* expr, Stack* stk, Lexicon* lex) {
 		
 		// validate expression
 		if ((token = strtok(NULL, " ")) == NULL) { 
-			if (qtstk->size > 0 && qtstk->items[qtstk->size -1] != NULL 
-					&& pd == NULL) { // if nothing to quote
-
+			// if nothing to quote
+			if (qtstk->size > 0 && qtstk->items[qtstk->size -1] != NULL && pd == NULL) { 
 				fprintf(stderr, "INVALID EXPRESSION GIVEN - STANDALONE QUOTE\n");
 				break;
 			}
@@ -689,8 +680,10 @@ void parus_evaluate(char* expr, Stack* stk, Lexicon* lex) {
 				qtop->data.quoted = pd;
 				pd = qtop;
 			}
-			else 
+			else {
+				stack_push(qtstk, NULL); // return bookmark
 				break;
+			}
 		}
 
 		if (opstk->size == 0) {
@@ -699,9 +692,8 @@ void parus_evaluate(char* expr, Stack* stk, Lexicon* lex) {
 			else
 				parus_apply(pd, stk, lex); // non self evaluating, apply
 		}
-		else // inserts instruction to topmost operator
+		else // inserts instruction to top most operator
 			parus_insert_instr(opstk->items[opstk->size -1], pd);
-
 	}
 
 	free(buffer);
