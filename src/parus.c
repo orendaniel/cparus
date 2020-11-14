@@ -464,7 +464,7 @@ void parus_insert_instr(ParusData* op, ParusData* instr) {
 /* 
 Returns if the evaluator can call the expression by returning the parentheses count
 
-if result > 0 unterminated expression
+if result > 0 unterminated expression or standalone quote
 if result = 0 valid expression
 if result < 0 overterminated expression
 */
@@ -473,6 +473,7 @@ int parus_parencount(char* expr) {
 	int 	i 		= 0;
 	char 	ignore  = 0;
 	char 	c;
+	char 	q 		= 0;
 
 	while ((c = expr[i++]) != '\0') {
 		if (c == COMMENT_CHAR)
@@ -481,13 +482,22 @@ int parus_parencount(char* expr) {
 		else if (c == '\n')
 			ignore = 0;
 
+
+		if (c == QUOTE_CHAR)
+			q = 1;
+
 		if (!ignore && c == LP_CHAR)
 			result++;
 
 		else if (!ignore && c == RP_CHAR)
 			result--;
+
+		if (!ignore && !isspace(c) && c != QUOTE_CHAR)
+			q = 0;
 	}   
 
+	if (q)
+		return 1;
 	return result;
 }
 
@@ -613,8 +623,13 @@ void parus_evaluate(char* expr, Stack* stk, Lexicon* lex) {
 		ParusData* pd = NULL;
 		
 		if (is_termination(token)) {
-			if (opstk->size == 1) 
+			if (opstk->size == 1) {
 				pd = stack_pull(opstk);
+				if (stack_pull(qtstk) != NULL) {
+					fprintf(stderr, "INVALID INSRUCTION GIVEN - STANDALONE QUOTE\n");
+					break;
+				}
+			}
 
 			else if (opstk->size > 1) {
 				ParusData* internal = stack_pull(opstk);
@@ -622,6 +637,7 @@ void parus_evaluate(char* expr, Stack* stk, Lexicon* lex) {
 
 				parus_insert_instr(external, internal);
 				stack_push(opstk, external);
+
 			}
 			else {
 				fprintf(stderr, "INVALID EXPRESSION GIVEN - EXPECTED AN OPERATOR\n");
