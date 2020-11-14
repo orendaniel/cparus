@@ -625,7 +625,7 @@ void parus_evaluate(char* expr, Stack* stk, Lexicon* lex) {
 		if (is_termination(token)) {
 			if (opstk->size == 1) {
 				pd = stack_pull(opstk);
-				if (stack_pull(qtstk) != NULL) {
+				if (qtstk->size != 0 && stack_pull(qtstk) != NULL) {
 					fprintf(stderr, "INVALID INSRUCTION GIVEN - STANDALONE QUOTE\n");
 					break;
 				}
