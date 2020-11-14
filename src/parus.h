@@ -114,7 +114,7 @@ char* 			parusdata_getsymbol(ParusData* pd);
 ParusData* 		make_parus_quote(ParusData* quoted);
 ParusData* 		parusdata_unquote(ParusData* pd);
 ParusData* 		make_parus_baseop(baseop_t op);
-ParusData* 		make_parus_userop(char* expr);
+ParusData* 		make_parus_userop();
 void 			free_parusdata(ParusData* pd);
 void 			print_parusdata(ParusData* pd);
 

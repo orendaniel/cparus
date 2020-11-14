@@ -27,13 +27,13 @@ static applier_t apply_shortcut;
 // HELPERS
 // ----------------------------------------------------------------------------------------------------
 
-/* copies the string, and insertes spaces between parentheses */
+/* Copies the string, and insertes spaces between parentheses and quote and removes comments*/
 static char* copy_string(char* s) {
 	int size 	= 1;
 	int len 	= 1;
 
 	for (int i = 0; s[i] != '\0'; i++) {
-		if (s[i] == LP_CHAR || s[i] == RP_CHAR)
+		if (s[i] == LP_CHAR || s[i] == RP_CHAR || s[i] == QUOTE_CHAR)
 			size += 2; // insert area for two spaces
 		size++;
 		len++;
@@ -42,7 +42,12 @@ static char* copy_string(char* s) {
 	char* ns = calloc(size, sizeof(char));
 
 	for (int i = 0, j = 0; i < len; i++, j++) {
-		if (s[i] == LP_CHAR || s[i] == RP_CHAR) {
+		if (s[i] == COMMENT_CHAR) {
+			ns[j] = ' ';
+			while (s[i] != '\n' && s[i] != '\0') i++;
+		}
+
+		if (s[i] == LP_CHAR || s[i] == RP_CHAR || s[i] == QUOTE_CHAR) {
 			ns[j++] = ' ';
 			ns[j++] = s[i];
 			ns[j] = ' ';
@@ -92,171 +97,12 @@ static char is_symbol(char* s) {
 		&& s[0] != '\0';
 }
 
-/* Parse a single expression at a time, not including comments */
-static ParusData* parse_single_expr(char* expr) {
-
-	/* skip spaces */
-	while (isspace(expr[0])) expr++;
-
-	/* pass */
-	if (expr[0] == '\0')
-		return NULL;
-
-	/* invalid syntax */
-	if (is_termination(expr)) {
-		fprintf(stderr, "EXPECTED OPERATOR\n");
-		return NULL;
-	}
-
-	/* self evaluating forms */
-	if (is_user_operator(expr))
-		return make_parus_userop(expr);
-
-	else if (is_integer(expr)) 
-		return make_parus_integer(atoi(expr));
-
-	else if (is_decimal(expr))
-		return make_parus_decimal(atof(expr));
-
-	/* quoted forms */
-	else if (is_quoted(expr) && (expr +1)[0] != '\0')
-		return make_parus_quote(parse_single_expr(expr +1));
-
-	/* apply for given symbol */
-	else if (is_symbol(expr))
-		return make_parus_symbol(expr);
-
-	else {
-		fprintf(stderr, "INVALID EXPRESSION - %s\n", expr);
-		return NULL;
-	} 
-}
-
-/* inserts an instruction to a op */
-static void insert_instruction(ParusData* op, ParusData* instr) {
-	if (op->type != USEROP) {
-		fprintf(stderr, "CANNOT INSERT INSTRUCTION FOR A NON OPERATOR\n");
-		return;
-	}
-	
-	if (op->data.userop.size < op->data.userop.max -1)
-			op->data.userop.instructions[op->data.userop.size++] = instr;
-	
-	else {
-		op->data.userop.instructions = realloc(op->data.userop.instructions,
-					(op->data.userop.max + USEROP_INSTR_GROWTH) * sizeof(ParusData));
-
-		if (op->data.userop.instructions != 0) {
-			op->data.userop.max += USEROP_INSTR_GROWTH;
-			op->data.userop.instructions[op->data.userop.size++] = instr;
-		}
-		else
-			fprintf(stderr, "CANNOT INSERT INSTRUCTION\n");
-	}
-}
-
-static ParusData* init_userop() {
-	ParusData* op = calloc(1, sizeof(ParusData));
-
-	if (op != NULL) {
-		op->data.userop.instructions	= calloc(USEROP_INSTR_GROWTH, sizeof(ParusData));
-		op->data.userop.max 			= USEROP_INSTR_GROWTH;
-		op->data.userop.size 			= 0;
-		op->type 						= USEROP;
-	}
-
-	return op;
-}
-
-/*
-make a new parusdata as a user defined operator 
-A user defined operator is represented by an array of ParusData that are evaluated sequentially
-
-expr is the textual representation of the operator with the openning emitted sense it is unneeded
-spaces between parentheses are required
-
-Example: DPL * )
-
-expr must be mutable
-*/
-static ParusData* make_userop(char* expr) {
-	Stack* 	opstk 		= make_stack(); // a stack to store nested operators
-	char* 	token 		= strtok(expr, " ");
-	char 	terminated 	= 0;
-
-	if (opstk == NULL) {
-		fprintf(stderr, "CANNOT ALLOCATE OPERATOR\n");
-		return NULL;
-	}
-	
-	stack_push(opstk, init_userop());
-
-	while (token != NULL) {
-		
-		if (opstk->size == 0)
-			break;
-
-		ParusData* op = opstk->items[opstk->size -1];
-
-		if (is_user_operator(token))
-			stack_push(opstk, init_userop());
-			
-		else if (is_termination(token)) {
-			if (opstk->size > 1) {
-				ParusData* internal = stack_pull(opstk);
-				ParusData* external = stack_pull(opstk);
-
-				insert_instruction(external, internal);
-				stack_push(opstk, external);
-			}
-			else {
-				terminated = 1;
-				break;
-			}
-		}
-
-		else {
-			ParusData* instr = parse_single_expr(token);
-			if (instr != NULL)
-				insert_instruction(op, instr);
-			else {
-				fprintf(stderr, "INVALID TOKEN IN USER DEFINED OPERATOR - %s\n", expr);
-				free_stack(opstk);
-				return NULL;
-			}
-		}
-
-		token = strtok(NULL, " ");
-	}
-		
-	if (!terminated) {
-		fprintf(stderr, "UN-TERMINATED OPERATOR\n");
-		free_stack(opstk);
-		return NULL;
-	}
-
-	ParusData* pd = stack_pull(opstk);
-	free_stack(opstk);
-	return pd;
-}
-
-static void eval(char* expr, Stack* stk, Lexicon* lex) {
-	ParusData* pd = parse_single_expr(expr);
-	if (pd == NULL) return;
-
-	if (pd->type != SYMBOL && pd->type != QUOTED)
-		stack_push(stk, pd);
-	else
-		parus_apply(pd, stk, lex);
-}
-
 // PARUSDATA
 // ----------------------------------------------------------------------------------------------------
 
 /* Returns a new copy of ParusData* */
 ParusData* parusdata_copy(ParusData* original) {
-	if (original == NULL)
-		return NULL;
+	if (original == NULL) return NULL;
 
 	else if (original->type == INTEGER)
 		return make_parus_integer(parusdata_tointeger(original));
@@ -285,10 +131,11 @@ ParusData* parusdata_copy(ParusData* original) {
 
 		return op;
 	}
+
 	return NULL;
 }
 
-/* makes a new parusdata as an integer */ 
+/* Makes a new parusdata as an integer */ 
 ParusData* make_parus_integer(integer_t i) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
@@ -298,12 +145,12 @@ ParusData* make_parus_integer(integer_t i) {
 	return pd;
 }
 
-/* returns an integer */
+/* Returns an integer */
 integer_t parusdata_tointeger(ParusData* pd) {
 	return pd->data.integer;
 }
 
-/* makes a new parusdata as a decimal */ 
+/* Makes a new parusdata as a decimal */ 
 ParusData* make_parus_decimal(decimal_t d) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
@@ -313,12 +160,12 @@ ParusData* make_parus_decimal(decimal_t d) {
 	return pd;
 }
 
-/* returns a decimal */
+/* Returns a decimal */
 decimal_t parusdata_todecimal(ParusData* pd) {
 	return pd->data.decimal;
 }
 
-/* makes a new parusdata as a symbol */ 
+/* Makes a new parusdata as a symbol */ 
 ParusData* make_parus_symbol(char* s) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
@@ -328,12 +175,12 @@ ParusData* make_parus_symbol(char* s) {
 	return pd;
 }
 
-/* returns a symbol */
+/* Returns a symbol */
 char* parusdata_getsymbol(ParusData* pd) {
 	return pd->data.symbol;
 }
 
-/* returns a new quoted value */
+/* Returns a new quoted value */
 ParusData* make_parus_quote(ParusData* quoted) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
@@ -343,12 +190,12 @@ ParusData* make_parus_quote(ParusData* quoted) {
 	return pd;
 }
 
-/* returns the quoted ParusData* */
+/* Returns the quoted ParusData* */
 ParusData* parusdata_unquote(ParusData* pd) {
 	return pd->data.quoted;
 }
 
-/* makes a new parusdata as a base operator */ 
+/* Makes a new parusdata as a base operator */ 
 ParusData* make_parus_baseop(baseop_t op) {
 	ParusData* pd = calloc(1, sizeof(ParusData));
 	if (pd != NULL) {
@@ -358,22 +205,22 @@ ParusData* make_parus_baseop(baseop_t op) {
 	return pd;
 }
 
-/*
-returns a new user defined operator
-comments are not allowed, and only ' ' is a valid space
-*/
-ParusData* make_parus_userop(char* expr) {
-	int 	offset 	= 0;
-	char* 	nexpr 	= copy_string(expr);
+/* Makes a new userop insert instructions with parus_insert_instr */
+ParusData* make_parus_userop() {
+	ParusData* op = calloc(1, sizeof(ParusData));
 
-	while (isspace(nexpr[offset])) offset++;
+	if (op != NULL) {
+		op->data.userop.instructions	= calloc(USEROP_INSTR_GROWTH, sizeof(ParusData));
+		op->data.userop.max 			= USEROP_INSTR_GROWTH;
+		op->data.userop.size 			= 0;
+		op->type 						= USEROP;
+	}
 
-	ParusData* op = make_userop(nexpr + offset +1);
-	free(nexpr);
 	return op;
 }
 
-/* free the parusdata */
+
+/* Free the parusdata */
 void free_parusdata(ParusData* pd) {
 	if (pd != NULL && pd->type != NONE) {
 		if (pd->type == SYMBOL)
@@ -394,7 +241,7 @@ void free_parusdata(ParusData* pd) {
 	}
 }
 
-/* prints parusdata */
+/* Prints parusdata */
 void print_parusdata(ParusData* pd) {
 	if (pd == NULL) return;
 
@@ -419,7 +266,7 @@ void print_parusdata(ParusData* pd) {
 // STACK
 // ----------------------------------------------------------------------------------------------------
 
-/* makes a new parus stack */
+/* Makes a new parus stack */
 Stack* make_stack() {
 	Stack* stk 	= calloc(1, sizeof(Stack*));
 	stk->size   = 0;
@@ -429,7 +276,7 @@ Stack* make_stack() {
 	return stk;
 }
 
-/* pushes a new parusdata item to the stack */
+/* Pushes a new parusdata item to the stack */
 void stack_push(Stack* stk, ParusData* pd) {
 	if (stk->size != stk->max - 1) 
 		stk->items[stk->size++] = pd;
@@ -445,7 +292,7 @@ void stack_push(Stack* stk, ParusData* pd) {
 }
 
 /*
-pulls an item from the stack
+Pulls an item from the stack.
 the item needs to be freed after usage
 */
 ParusData* stack_pull(Stack* stk) {
@@ -458,7 +305,7 @@ ParusData* stack_pull(Stack* stk) {
 }
 
 /*
-gets a copy from the stack
+Gets a copy from the stack.
 index is counted from the end of the stack
 so 0 is the first item
 */
@@ -470,7 +317,7 @@ ParusData* stack_get_at(Stack* stk, size_t index) {
 }
 
 /*
-deletes item from the stack an cleans it
+Deletes item from the stack an cleans it.
 index is counted from the end of the stack
 so 0 is the first item
 */
@@ -485,15 +332,17 @@ void stack_remove_at(Stack* stk, size_t index) {
 	}
 }
 
-/* frees the stack */
+/* Frees the stack */
 void free_stack(Stack* stk) {
-	for (int i = 0; i < stk->size; i++)
-		free_parusdata(stk->items[i]);
-	free(stk->items);
-	free(stk);
+	if (stk != NULL) {
+		for (int i = 0; i < stk->size; i++)
+			free_parusdata(stk->items[i]);
+		free(stk->items);
+		free(stk);
+	}
 }
 
-/* prints the stack contant */
+/* Prints the stack contant */
 void print_stack(Stack* stk) {
 	for (int i = 0; i < stk->size; i++) {
 		print_parusdata(stk->items[i]);
@@ -506,7 +355,7 @@ void print_stack(Stack* stk) {
 // LEXICON
 // ----------------------------------------------------------------------------------------------------
 
-/* makes a new lexicon */
+/* Makes a new lexicon */
 Lexicon* make_lexicon() {
 	Lexicon* lex 	= calloc(1, sizeof(Lexicon));
 	lex->size 		= 0;
@@ -516,7 +365,7 @@ Lexicon* make_lexicon() {
 	return lex;
 }
 
-/* define a new entry on the lexicon */
+/* Define a new entry on the lexicon */
 void lexicon_define(Lexicon* lex, char* name, ParusData* pd) {
 	struct entry ent;
 	ent.name 	= copy_string(name);
@@ -534,7 +383,7 @@ void lexicon_define(Lexicon* lex, char* name, ParusData* pd) {
 	}
 }
 
-/* deletes an entry from the lexicon */
+/* Deletes an entry from the lexicon */
 void lexicon_delete(Lexicon* lex, char* name) {
 	int index = 0;
 	for (int i = lex->size -1; i >= 0; i--) 
@@ -555,7 +404,7 @@ void lexicon_delete(Lexicon* lex, char* name) {
 	fprintf(stderr, "CANNOT DELETE AN UNDEFINED ENTRY - %s\n", name);
 }
 
-/* gets a copy of an entry */
+/* Gets a copy of an entry */
 ParusData* lexicon_get(Lexicon* lex, char* name) {
 	for (int i = lex->size -1; i >= 0; i--) 
 		if (strcmp(lex->entries[i].name, name) == 0)
@@ -565,17 +414,19 @@ ParusData* lexicon_get(Lexicon* lex, char* name) {
 	return NULL;
 }
 
-/* frees the lexicon */
+/* Frees the lexicon */
 void free_lexicon(Lexicon* lex) {
-	for (int i = 0; i < lex->size; i++) {
-		free_parusdata(lex->entries[i].value);
-		free(lex->entries[i].name);
+	if (lex != NULL) {
+		for (int i = 0; i < lex->size; i++) {
+			free_parusdata(lex->entries[i].value);
+			free(lex->entries[i].name);
+		}
+		free(lex->entries);
+		free(lex);
 	}
-	free(lex->entries);
-	free(lex);
 }
 
-/* prints the lexicon contant */
+/* Prints the lexicon contant */
 void print_lexicon(Lexicon* lex) {
 	for (int i = 0; i < lex->size; i++) {
 		printf("%s : ", lex->entries[i].name);
@@ -587,20 +438,43 @@ void print_lexicon(Lexicon* lex) {
 // CPARUS FUNCTIONS
 // ----------------------------------------------------------------------------------------------------
 
+/* Inserts an instruction to a user op */
+void parus_insert_instr(ParusData* op, ParusData* instr) {
+	if (op->type != USEROP) {
+		fprintf(stderr, "CANNOT INSERT INSTRUCTION FOR A NON OPERATOR\n");
+		return;
+	}
+	
+	if (op->data.userop.size < op->data.userop.max -1)
+			op->data.userop.instructions[op->data.userop.size++] = instr;
+	
+	else {
+		op->data.userop.instructions = realloc(op->data.userop.instructions,
+					(op->data.userop.max + USEROP_INSTR_GROWTH) * sizeof(ParusData));
+
+		if (op->data.userop.instructions != 0) {
+			op->data.userop.max += USEROP_INSTR_GROWTH;
+			op->data.userop.instructions[op->data.userop.size++] = instr;
+		}
+		else
+			fprintf(stderr, "CANNOT INSERT INSTRUCTION\n");
+	}
+}
+
 /* 
-returns if the evaluator can call the expression by returning the parentheses count
+Returns if the evaluator can call the expression by returning the parentheses count
 
 if result > 0 unterminated expression
 if result = 0 valid expression
 if result < 0 overterminated expression
 */
-int parus_parencount(char* str) {
+int parus_parencount(char* expr) {
 	int 	result  = 0;
 	int 	i 		= 0;
 	char 	ignore  = 0;
 	char 	c;
 
-	while ((c = str[i++]) != '\0') {
+	while ((c = expr[i++]) != '\0') {
 		if (c == COMMENT_CHAR)
 			ignore = 1;
 
@@ -618,7 +492,7 @@ int parus_parencount(char* str) {
 }
 
 /*
-sets apply_caller and apply_shortcut.
+Sets apply_caller and apply_shortcut.
 make sure to call parus_set_applier(NULL, NULL), 
 after calling it in order to reset the values.
 */
@@ -628,7 +502,7 @@ void parus_set_applier(baseop_t caller, applier_t applier) {
 }
 
 /*
-applies a parusdata 
+Applies a parusdata 
 the function will automatically free pd if needed
 */
 int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
@@ -726,40 +600,93 @@ int parus_apply(ParusData* pd, Stack* stk, Lexicon* lex) {
 }
 
 /* The Parus Evaluator */
-void parus_evaluate(char* input, Stack* stk, Lexicon* lex) {
-	int 	size 	= (strlen(input) +1);
-	int 	i 		= 0;
-	int 	j 		= 0;
-	char* 	buffer 	= calloc(size, sizeof(char));
-	char 	c;
+void parus_evaluate(char* expr, Stack* stk, Lexicon* lex) {
+	char* 	buffer 	= copy_string(expr);
 
-	while ((c = input[i++]) != '\0') {
-		if (c == COMMENT_CHAR) { // comment skip to next line
-			buffer[j++] = ' ';
-			while ((c = input[++i]) != '\n' && c != '\0');
-		}
-		else
-			buffer[j++] = isspace(c) ? ' ' : c;
+	// stacks are used to store yet to be terminated operators and quotes
+	Stack* 	opstk 	= make_stack(); 
+	Stack* 	qtstk 	= make_stack();
+
+	char* 	token 	= strtok(buffer, " ");
+	
+	while (token != NULL) {
+		ParusData* pd = NULL;
 		
-		// if read a complete expression
-		int pc = parus_parencount(buffer);
-		if ((c == LP_CHAR && buffer[j -2] != QUOTE_CHAR && pc == 1) ||
-			((isspace(c) || c == RP_CHAR) && pc <= 0)) {
+		if (is_termination(token)) {
+			if (opstk->size == 1) 
+				pd = stack_pull(opstk);
 
-			buffer[c == RP_CHAR ? j :j -1] = '\0';
+			else if (opstk->size > 1) {
+				ParusData* internal = stack_pull(opstk);
+				ParusData* external = stack_pull(opstk);
 
-			eval(buffer, stk, lex);
-
-			j = 0;
-			memset(buffer, '\0', size);
-
-			if (c == LP_CHAR) // return the removed LP to the buffer if needed
-				buffer[j++] = LP_CHAR;
+				parus_insert_instr(external, internal);
+				stack_push(opstk, external);
+			}
+			else {
+				fprintf(stderr, "INVALID EXPRESSION GIVEN - EXPECTED AN OPERATOR\n");
+				break;
+			}
 		}
+
+		/* self evaluating forms */
+		else if (is_user_operator(token)) {
+			stack_push(opstk, make_parus_userop());
+			stack_push(qtstk, NULL); // keep bookmark of the quotation order
+		}
+
+		else if (is_integer(token))
+			pd = make_parus_integer(atoi(token));
+
+		else if (is_decimal(token))
+			pd = make_parus_decimal(atof(token));
+
+		/* quoted forms */
+		else if (is_quoted(token))
+			stack_push(qtstk, make_parus_quote(NULL));
+		
+		/* calls */
+		else if (is_symbol(token))
+			pd = make_parus_symbol(token);
+		
+		// validate expression
+		if ((token = strtok(NULL, " ")) == NULL) { 
+			if (qtstk->size > 0 && qtstk->items[qtstk->size -1] != NULL) { // if nothing to quote
+				fprintf(stderr, "INVALID EXPRESSION GIVEN - STANDALONE QUOTE\n");
+				break;
+			}
+			if (opstk->size > 0) { // if unterminated expression given
+				fprintf(stderr, "INVALID EXPRESSION GIVEN - UNTERMINATED OPERATOR\n");
+				break;
+			}
+		}
+
+		// if a complete expression is yet to be read continue
+		if (pd == NULL) continue;
+
+		// quotates the expression
+		while (qtstk->size > 0) {
+			ParusData* qtop;
+			if (qtstk->size > 0 && (qtop = stack_pull(qtstk)) != NULL) {
+				qtop->data.quoted = pd;
+				pd = qtop;
+			}
+			else 
+				break;
+		}
+
+		if (opstk->size == 0) {
+			if (pd->type != SYMBOL && pd->type != QUOTED) 
+				stack_push(stk, pd); // self evaluating, push to the stack
+			else
+				parus_apply(pd, stk, lex); // non self evaluating, apply
+		}
+		else // inserts instruction to topmost operator
+			parus_insert_instr(opstk->items[opstk->size -1], pd);
+
 	}
 
-	buffer[j] = '\0';
-	eval(buffer, stk, lex);
 	free(buffer);
-
+	free_stack(opstk);
+	free_stack(qtstk);
 }
