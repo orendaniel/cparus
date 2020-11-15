@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "parus_predefined.h"
 #include <math.h>
 
-#define READER_BUFFER_SIZE 1024
+#define READ_BUFFER 1024
 
 static decimal_t force_decimal(ParusData* pd) {
 	if (pd->type == INTEGER)
@@ -157,7 +157,6 @@ static int eqv(void* stk, void* lex) {
 		free_parusdata(pd2);
 		fprintf(stderr, "ATTEMPT TO COMPARE NULLITY\n");
 		return 1;
-		
 	}
 
 	stack_push(stk, make_parus_integer(equivalent(pd1, pd2)));
@@ -405,7 +404,6 @@ static int out(void* stk, void* lex) {
 		free_parusdata(pd);
 		fprintf(stderr, "CANNOT PRINT NULLITY\n");
 		return 1;
-	
 	}
 	print_parusdata(pd);
 	free_parusdata(pd);
@@ -422,17 +420,29 @@ static int outln(void* stk, void* lex) {
 
 /* reader evaluates the expression given */
 static int read(void* stk, void* lex) {
-	char line[READER_BUFFER_SIZE];
-	line[0] = QUOTE_CHAR;
-	if (fgets(line +1, READER_BUFFER_SIZE -1, stdin) != NULL)
-		parus_evaluate(line, stk, lex);
+	int c;
+	int i = 1;
+
+	char buffer[READ_BUFFER];
+	buffer[0] = QUOTE_CHAR;
+
+	while ((c = getc(stdin)) != EOF && i < READ_BUFFER -1) {
+		if (isspace(c)) {
+			buffer[i] = '\0';
+			break;
+		}
+		else if (c != LP_CHAR && c != RP_CHAR && c != COMMENT_CHAR) {
+			buffer[i++] = c;
+		}
+	}
+	if (buffer[i -1] != QUOTE_CHAR)
+		parus_evaluate(buffer, stk, lex);
 
 	return 0;
 }
 
 static int getcharacter(void* stk, void* lex) {
 	stack_push(stk, make_parus_integer(getc(stdin)));
-
 	return 0;
 }
 
