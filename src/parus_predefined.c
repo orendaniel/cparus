@@ -662,6 +662,40 @@ static int help(void* stk, void* lex) {
 	return 0;
 }
 
+// EXPERIMENTAL
+// ----------------------------------------------------------------------------------------------------
+
+static int seqterm(void* stk, void* lex) {
+	Stack* 		pstk 		= (Stack*)stk;
+	ParusData* 	seq_sym 	= make_parus_symbol("[");
+	int 		index 		= -1;
+
+	for (int i = pstk->size -1; i >= 0; i--) {
+		if (equivalent(seq_sym, pstk->items[i])) {
+			index = i;
+			break;
+		}
+	}
+	if (index < 0) {
+		fprintf(stderr, "NO SEQUENCE LABEL FOUND\n");
+		free_parusdata(seq_sym);
+		return 1;
+	}
+
+	index = pstk->size - (index +1);
+	stack_remove_at(stk, index--);
+	ParusData* op = make_parus_userop();
+
+	for (int i = index; i >= 0; i--) {
+		ParusData* instr = stack_get_at(stk, i);
+		parus_insert_instr(op, instr);
+		stack_remove_at(stk, i);
+	}
+	
+	stack_push(stk, op);
+	return 0;
+}
+
 Lexicon* predefined_lexicon() {
 	Lexicon* lex = make_lexicon();
 
@@ -709,6 +743,9 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "?stk", make_parus_baseop(&stkprint));
 	lexicon_define(lex, "?lex", make_parus_baseop(&lexprint));
 	lexicon_define(lex, "?help", make_parus_baseop(&help));
+
+	lexicon_define(lex, "[", make_parus_quote(make_parus_symbol("[")));
+	lexicon_define(lex, "]", make_parus_baseop(&seqterm));
 
 	return lex;
 
