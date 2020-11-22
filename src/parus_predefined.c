@@ -575,10 +575,9 @@ static int for_op(void* stk, void* lex) {
 
 
 static int end_case_op(void* stk, void* lex) {
-	Stack* pstk 		= (Stack*)stk;
-	ParusData* case_sym = make_parus_symbol("case");
-
-	int index = -1;
+	Stack* 		pstk 		= (Stack*)stk;
+	ParusData* 	case_sym 	= make_parus_symbol("case");
+	int 		index 		= -1;
 
 	for (int i = pstk->size -1; i >= 0; i--) {
 		if (equivalent(case_sym, pstk->items[i])) {
