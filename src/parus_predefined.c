@@ -667,7 +667,7 @@ static int help(void* stk, void* lex) {
 
 static int seqterm(void* stk, void* lex) {
 	Stack* 		pstk 		= (Stack*)stk;
-	ParusData* 	seq_sym 	= make_parus_symbol("[");
+	ParusData* 	seq_sym 	= make_parus_symbol("seq");
 	int 		index 		= -1;
 
 	for (int i = pstk->size -1; i >= 0; i--) {
@@ -744,8 +744,8 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "?lex", make_parus_baseop(&lexprint));
 	lexicon_define(lex, "?help", make_parus_baseop(&help));
 
-	lexicon_define(lex, "[", make_parus_quote(make_parus_symbol("[")));
-	lexicon_define(lex, "]", make_parus_baseop(&seqterm));
+	lexicon_define(lex, "seq", make_parus_quote(make_parus_symbol("seq")));
+	lexicon_define(lex, "end-seq", make_parus_baseop(&seqterm));
 
 	return lex;
 
