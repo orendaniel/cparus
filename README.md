@@ -46,23 +46,23 @@ https://gitlab.com/oren_daniel/parus-manual
 
 ; Inspect the memory using ?stk and ?lex.
 
-3 2 + OUTLN
+3 2 + outln
 
 ; ==> 5
 
 ; spaces are required between parenthesis
 
-( DPL * ) '^2 DEF
+(dpl *) '^2 define
 
-5 ^2 OUTLN
+5 ^2 outln
 
 ; ==> 25
 
-''a 'b DEF
+''a 'b define
 
-3 'a DEF
+3 'a define
 
-b ! OUTLN
+b ! outln
 
 ; ==> 3
 
@@ -70,8 +70,8 @@ b ! OUTLN
 
 ''𐤔𐤋𐤅𐤌
 'שלום
-DEF
+define
 
-3.14159 'π DEF
+3.14159 'π define
 
 See examples at examples/ folder
