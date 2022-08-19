@@ -39,7 +39,7 @@ elseif symbol:
 
 Please refer to the parus manual, for more comprehensive explanation:
 
-https://gitlab.com/oren_daniel/parus-manual
+https://github.com/orendaniel/parus-manual
 
 
 # Examples
