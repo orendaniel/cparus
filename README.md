@@ -1,4 +1,4 @@
-# CPaurs 
+# CParus 
 
 A C implementation of the Parus language
 
