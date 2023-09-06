@@ -8,13 +8,6 @@ The language is named after Paridae bird family (Tits, Titmices and Chickadees).
 
 Members of the Paridae family are small and highly intelligent birds.
 
-# NOTE
-
-THIS IS AN EARLY STAGE PROJECT SO SEGFAULTS AND MEMORY LEAKS COULD ACCURE.
-
-Further more some sections in the code should be re-written
-
-
 # Technical Details
 
 This interpreter is built around simplicity,
@@ -49,8 +42,6 @@ https://github.com/orendaniel/parus-manual
 3 2 + outln
 
 ; ==> 5
-
-; spaces are required between parenthesis
 
 (dpl *) '^2 define
 
