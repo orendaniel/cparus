@@ -31,7 +31,7 @@
 
 ) 'end-case define
 
-1 'else define
+''else 'else define
 
 1 2 3
 case

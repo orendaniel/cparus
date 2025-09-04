@@ -126,12 +126,12 @@ static int if_op(void* stk, void* lex) {
 		return 1;
 	}
 
-	char act = 0;
+	char act = 1;
 
-	if (cond->type == INTEGER && parusdata_tointeger(cond) != 0)
-		act = 1;
-	else if (cond->type == DECIMAL && parusdata_todecimal(cond) != 0)
-		act = 1;
+	if (cond->type == INTEGER && parusdata_tointeger(cond) == 0)
+		act = 0;
+	else if (cond->type == DECIMAL && parusdata_todecimal(cond) == 0)
+		act = 0;
 
 	if (act) {
 		stack_push(stk, do_true);
@@ -242,7 +242,11 @@ static int find(void* stk, void* lex) {
 			break;
 		}
 	}
-	stack_push(stk, make_parus_integer(pstk->size - (index +1)));
+
+	if (index != -1)
+		stack_push(stk, make_parus_integer(pstk->size - (index +1)));
+	else
+		stack_push(stk, make_parus_integer(-1));
 
 	free_parusdata(pd);
 	return 0;
