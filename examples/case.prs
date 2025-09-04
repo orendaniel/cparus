@@ -1,42 +1,42 @@
+(length 1 - @)   'bring-bottom define
+(bring-bottom !) 'apply-bottom define
 
-; An example of a syntatic form that might be defined in Parus
-; implementation of a case-like branching structure
+''case 'case define
 
-''case 'case define ; defines a mark word
-1 'else define 		; else will always evaluate to true
+; setup the stack by copying overthing before the case forward 
+(bring-bottom dpl 'case_bfb eqv? (drop) (case_build-buffer) if !) 'case_build-buffer define 
 
+; run the case structure 
+(
+	dpl 'case_bft eqv? 
+	(drop) ; reached bottom drop case_bft 
+		
+	; bring the bottom condition 
+	; if its true: bring bottom expression remove the unneeded conds and exprs and run expr 
+	; else: remove the bottom expression and repeat 
+	(apply-bottom (bring-bottom case_clear !) 
+	(bring-bottom drop case_run) if !) if !
+) 'case_run define 
 
-(find 'strip_i 0 2 @ '< 1 'drop for) 'strip define ; a helper function that cleans the stack until a label
+; clear terminated case
+(bring-bottom 'case_bft dpl eqv? (drop) (drop case_clear) if !) 'case_clear define 
 
 ( 
-	case find 1 - @ ! ; get the conditional macro
+	'case_bfb case find 1 - setat ; change the marking of the most recent case to case_bfb or case buffer bottom 
+	'case_bft ; insert a case_bft label or case buffer top to mark the end of the structure 
 
-	(  
-		case find 1 - @ 'case-end_res define 	; get result
-		case strip 								; clean up
-		drop 
-		case-end_res 							; push result and clean up
-		'case-end_res delete
-	)
+	case_build-buffer ; by now get [c1 e1 ... cn en case_bft stack-tail ...] 
 
-	( 
-		case find 1 = 							; check if no more case
-		(case strip) 							; if yes then clean up
-		(case find 1 - @ drop end-case)   	; else continue to execute
-		if ! 
-	) ; else continue
+	case_run ; run the case structure 
 
-	if ! 
 ) 'end-case define
 
-3 'x define
+1 'else define
 
-; mark the start of the structure
+1 2 3
 case
-	(x 3 <)   ('A outln)
-	(x 3 =)   (case (5 3 <) ('C outln) (else) ('D outln) end-case)
-	(else)    ('B outln)
+   (dpl 3 <)   ('A outln)
+   (dpl 3 =)   (case (5 3 <) ('C outln) (else) ('D outln) end-case)
+   (dpl else)    ('B outln)
 end-case
-; end-case is the actual macro which evaluate the structure
 
-'x delete 
