@@ -19,7 +19,7 @@
 ) 'case_run define 
 
 ; clear terminated case
-(bring-bottom 'case_bft dpl eqv? (drop) (drop case_clear) if !) 'case_clear define 
+(bring-bottom dpl 'case_bft eqv? (drop) (drop case_clear) if !) 'case_clear define 
 
 ( 
 	'case_bfb case find 1 - setat ; change the marking of the most recent case to case_bfb or case buffer bottom 
@@ -27,16 +27,17 @@
 
 	case_build-buffer ; by now get [c1 e1 ... cn en case_bft stack-tail ...] 
 
-	case_run ; run the case structure 
+	case_run   ; run the case structure 
+	;case_clear ; clear residue
 
 ) 'end-case define
 
 ''else 'else define
 
-1 2 3
+3
 case
    (dpl 3 <)   ('A outln)
    (dpl 3 =)   (case (5 3 <) ('C outln) (else) ('D outln) end-case)
-   (dpl else)    ('B outln)
+   (else)    ('B outln)
 end-case
-
+?stk

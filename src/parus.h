@@ -42,7 +42,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	"Author's email: orendaniel150@gmail.com\n\n" \
 	"flags: -help -norepl -notitle file\n\n" 
 
-#define TITLE_MESSAGE "CParus version 1.0\n" \
+#define TITLE_MESSAGE "CParus version 1.1\n" \
 	"CParus is free software under the GPLv3 license.\n" \
 	"Copyright (C) 2020  Oren Daniel\n" \
 	"Type ?help for help, or in the command line enter 'parus -help.'\n\n"

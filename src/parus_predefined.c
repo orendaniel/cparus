@@ -743,8 +743,9 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "dpl", make_parus_baseop(&dpl));
 	lexicon_define(lex, "setat", make_parus_baseop(&setat));
 	lexicon_define(lex, "for", make_parus_baseop(&for_op));
-	//lexicon_define(lex, "case", make_parus_quote(make_parus_symbol("case")));
-	//lexicon_define(lex, "end-case", make_parus_baseop(&end_case_op));
+	lexicon_define(lex, "case", make_parus_quote(make_parus_symbol("case")));
+	lexicon_define(lex, "else", make_parus_quote(make_parus_symbol("else")));
+	lexicon_define(lex, "end-case", make_parus_baseop(&end_case_op));
 	lexicon_define(lex, "quit", make_parus_baseop(&quit));
 
 	lexicon_define(lex, "?stk", make_parus_baseop(&stkprint));
