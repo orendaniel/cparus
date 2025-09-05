@@ -579,65 +579,71 @@ static int for_op(void* stk, void* lex) {
 
 
 static int end_case_op(void* stk, void* lex) {
-	Stack* 		pstk 		= (Stack*)stk;
+	Stack* 		tmp 		= make_stack();
 	ParusData* 	case_sym 	= make_parus_symbol("case");
-	int 		index 		= -1;
 
-	for (int i = pstk->size -1; i >= 0; i--) {
-		if (equivalent(case_sym, pstk->items[i])) {
-			index = i;
-			break;
-		}
-	}
-	if (index < 0) {
-		fprintf(stderr, "NO CASE LABEL FOUND\n");
-		free_parusdata(case_sym);
-		return 1;
-	}
-
-	index = pstk->size - (index +1);
-	ParusData* iftrue = NULL;
-
-	while (index > 0) { 
-		if (index == 1)
-			break;
-
-		ParusData* cond = stack_get_at(stk, index -1);
-		ParusData* doif = stack_get_at(stk, index -2);
-
-		stack_remove_at(stk, index -1);
-		stack_remove_at(stk, index -2);
-
-		parus_apply(cond, stk, lex);
-
-		ParusData* top = stack_pull(stk);
-
-		char act = 0;
-		if (top != NULL && top->type == INTEGER && parusdata_tointeger(top) != 0)
-			act = 1;
-		else if (top != NULL && top->type == DECIMAL && parusdata_todecimal(top) != 0)
-			act = 1;
-
-		free_parusdata(top);
-
-		if (act) {
-			iftrue = doif;
-			break;
-		}
-		else
-			free_parusdata(doif);
-		
-		index -= 2;
-	}
+	ParusData* 	pd;
 	
+	while  (!equivalent((pd = stack_pull(stk)), case_sym)){
+		if (pd == NULL) {
+			fprintf(stderr, "NO CASE LABEL FOUND\n");
+			
+			// Undo
+			ParusData* back_pd;
+			while ((back_pd = stack_pull(tmp)) != NULL)
+				stack_push(stk, back_pd);
 
-	ParusData* pd = NULL;
-	while ((pd = stack_pull(stk)) != NULL && !equivalent(pd, case_sym)) // strip label
-		free_parusdata(pd);
+			free_stack(tmp);
+			free_parusdata(back_pd);
+			free_parusdata(pd);
+			free_parusdata(case_sym);
+			return 1;
+
+		}
+		stack_push(tmp, pd);
+	}
+
+	// marker and marker representation no longer needed
 	free_parusdata(pd);
 	free_parusdata(case_sym);
 
-	parus_apply(iftrue, stk, lex);
+	if (tmp->size % 2 != 0) {
+		fprintf(stderr, "CASE EXPECTS EVEN NUMBER OF ARGUEMENTS\n");
+		free_stack(tmp);
+		return 1;
+	}
+	else if (tmp->size == 0) { // trivial
+		free_stack(tmp);
+		return 0;
+	}
+	
+	ParusData* cnd = NULL;
+	ParusData* exp = NULL;
+	while ((cnd = stack_pull(tmp)) != NULL) {
+		parus_apply(cnd, stk, lex);
+
+		ParusData* res = stack_pull(stk);
+		char act = 1;
+
+		if (res->type == INTEGER && parusdata_tointeger(res) == 0)
+			act = 0;
+		else if (res->type == DECIMAL && parusdata_todecimal(res) == 0)
+			act = 0;
+		
+		free_parusdata(res);
+
+		exp = stack_pull(tmp);
+		if (act) {
+			parus_apply(exp, stk, lex);
+			break;
+		}
+		else 
+			free_parusdata(exp);
+
+		if (tmp->size == 0) break;
+	}
+
+	free_stack(tmp);
 
 	return 0;
 }
@@ -743,9 +749,9 @@ Lexicon* predefined_lexicon() {
 	lexicon_define(lex, "dpl", make_parus_baseop(&dpl));
 	lexicon_define(lex, "setat", make_parus_baseop(&setat));
 	lexicon_define(lex, "for", make_parus_baseop(&for_op));
-	lexicon_define(lex, "case", make_parus_quote(make_parus_symbol("case")));
-	lexicon_define(lex, "else", make_parus_quote(make_parus_symbol("else")));
-	lexicon_define(lex, "end-case", make_parus_baseop(&end_case_op));
+	//lexicon_define(lex, "case", make_parus_quote(make_parus_symbol("case")));
+	//lexicon_define(lex, "else", make_parus_quote(make_parus_symbol("else")));
+	//lexicon_define(lex, "end-case", make_parus_baseop(&end_case_op));
 	lexicon_define(lex, "quit", make_parus_baseop(&quit));
 
 	lexicon_define(lex, "?stk", make_parus_baseop(&stkprint));

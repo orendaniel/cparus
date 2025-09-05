@@ -3,32 +3,48 @@
 
 ''case 'case define
 
-; setup the stack by copying overthing before the case forward 
+; setup the stack by copying everything before the case forward 
 (bring-bottom dpl 'case_bfb eqv? (drop) (case_build-buffer) if !) 'case_build-buffer define 
 
-; run the case structure 
 (
-	dpl 'case_bft eqv? 
-	(drop) ; reached bottom drop case_bft 
-		
-	; bring the bottom condition 
-	; if its true: bring bottom expression remove the unneeded conds and exprs and run expr 
-	; else: remove the bottom expression and repeat 
-	(apply-bottom (bring-bottom case_clear !) 
-	(bring-bottom drop case_run) if !) if !
+	; as we will see we need the stack to be:
+	; ... case_bfb C1 E1 ... CN EN case_bft
+	; We bring the bottom item
+	; if it marks the end of the case we drop it and we are done
+	; if its a condtion we apply it
+	; if it yields true we apply its corrisponding expression
+	; else we drop both of them and continue
+
+	bring-bottom dpl 'case_bft eqv? 
+	(drop) 	
+	(   ! ; apply the condition
+
+		(apply-bottom)
+		(bring-bottom drop case_run) if !
+	) if !
 ) 'case_run define 
 
-; clear terminated case
 (bring-bottom dpl 'case_bft eqv? (drop) (drop case_clear) if !) 'case_clear define 
 
 ( 
-	'case_bfb case find 1 - setat ; change the marking of the most recent case to case_bfb or case buffer bottom 
-	'case_bft ; insert a case_bft label or case buffer top to mark the end of the structure 
+	; give a distinct marker so it want interefere with nested cases
+	'case_bfb case find 1 - setat
+	'case_bft
+	
+	; bfb - buffer bottom, bft - buffer top
+	; by now the stack should be:
+	; ... case_bfb C1 E1 ... CN EN case_bft
 
-	case_build-buffer ; by now get [c1 e1 ... cn en case_bft stack-tail ...] 
-
-	case_run   ; run the case structure 
-	;case_clear ; clear residue
+	case_build-buffer
+	
+	; now the stack is:
+	; C1 E1 ... CN EN case_bft ...
+	; So its dead simple to handle see case_run
+	
+	case_run
+	
+	; whipe the residue if needed
+	'case_bft find 0 < () (case_clear) if !
 
 ) 'end-case define
 
@@ -38,6 +54,6 @@
 case
    (dpl 3 <)   ('A outln)
    (dpl 3 =)   (case (5 3 <) ('C outln) (else) ('D outln) end-case)
-   (else)    ('B outln)
+   (else)      ('B outln)
 end-case
 ?stk
