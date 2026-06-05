@@ -1,5 +1,5 @@
 CC=gcc
-USE_READLINE=1
+USE_READLINE=0
 
 all:
 ifeq ($(USE_READLINE), 0)
